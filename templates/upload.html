@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Upload Network Traffic</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<nav>
+<a href="/">Home</a>
+<a href="/dashboard">Dashboard</a>
+<a href="/upload">Detect Attack</a>
+<a href="/about">About</a>
+</nav>
+
+<h2>Upload Network Traffic Dataset</h2>
+
+<form action="/predict" method="post" enctype="multipart/form-data">
+
+<input type="file" name="file" required>
+
+<br><br>
+
+<button type="submit">Analyze Traffic</button>
+
+</form>
+
+</body>
+</html>

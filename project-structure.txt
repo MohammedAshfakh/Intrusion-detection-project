@@ -1,0 +1,37 @@
+intrusion-detection-project-ML
+│
+├── README.md
+├── requirements.txt
+│
+├── dataset
+│   ├── dataset.csv
+│   ├── normal_traffic.csv
+│   └── attack_traffic.csv
+│
+├── model
+│   └── model.pkl
+│
+├── results
+│   └── predictions.txt
+│
+├── src
+│   ├── app.py
+│   └── train_model.py
+│
+├── templates
+│   ├── index.html
+│   ├── dashboard.html
+│   ├── upload.html
+│   ├── result.html
+│   └── about.html
+│
+├── static
+│   ├── style.css
+│   └── logo.png
+│
+├── scripts
+│   ├── install-libraries.sh
+│   └── verify-installation.sh
+│
+└── website-theme
+    └── theme-notes.txt
