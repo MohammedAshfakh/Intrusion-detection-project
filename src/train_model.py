@@ -1,28 +1,55 @@
 import pandas as pd
+import os
+import joblib
+
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-import pickle
+from sklearn.metrics import accuracy_score
 
-print("Loading dataset...")
+print("📊 Loading dataset...")
 
-# Load dataset
-data = pd.read_csv("dataset/dataset.csv")
+# ---------------- BASE PATH ----------------
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+dataset_path = os.path.join(BASE_DIR, "dataset", "dataset.csv")
 
-print("Dataset loaded successfully")
+# ---------------- LOAD DATA ----------------
+data = pd.read_csv(dataset_path)
 
-# Split features and label
-X = data.drop("label", axis=1)
-y = data["label"]
+print("✅ Dataset loaded")
 
-print("Training machine learning model...")
+# ---------------- PREPROCESS ----------------
+# last column = label
+X = data.iloc[:, :-1]
+y = data.iloc[:, -1]
 
-# Train model
+# convert label
+y = y.apply(lambda x: 0 if x == 'normal' else 1)
+
+# ---------------- SPLIT ----------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# ---------------- TRAIN ----------------
+print("🧠 Training model...")
+
 model = RandomForestClassifier(n_estimators=100)
-model.fit(X, y)
+model.fit(X_train, y_train)
 
-print("Model training completed")
+# ---------------- EVALUATE ----------------
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
 
-# Save model
-with open("model/model.pkl", "wb") as f:
-    pickle.dump(model, f)
+print(f"📈 Accuracy: {accuracy:.2f}")
 
-print("Model saved successfully in model/model.pkl")
+# ---------------- SAVE MODEL ----------------
+model_dir = os.path.join(BASE_DIR, "model")
+
+# create folder if not exists
+os.makedirs(model_dir, exist_ok=True)
+
+model_path = os.path.join(model_dir, "model.pkl")
+
+joblib.dump(model, model_path)
+
+print(f"💾 Model saved at: {model_path}")

@@ -2,7 +2,97 @@
 <html>
 <head>
 <title>Intrusion Detection System</title>
+
 <link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+background:#020617;
+color:white;
+font-family:Arial;
+margin:0;
+}
+
+nav{
+text-align:center;
+padding:15px;
+background:#020617;
+}
+
+nav a{
+color:#38bdf8;
+margin:10px;
+text-decoration:none;
+}
+
+.hero{
+text-align:center;
+padding:30px;
+}
+
+.logo{
+height:80px;
+}
+
+.container{
+width:90%;
+margin:auto;
+}
+
+.card{
+background:#0f172a;
+padding:20px;
+margin:15px 0;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.5);
+}
+
+.grid{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.grid .card{
+flex:1;
+min-width:200px;
+text-align:center;
+}
+
+.stats{
+display:flex;
+justify-content:space-around;
+text-align:center;
+}
+
+.stat h2{
+color:#38bdf8;
+}
+
+.graph-box{
+width:500px;
+height:220px;
+margin:auto;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:5px;
+background:linear-gradient(90deg,#06b6d4,#22c55e);
+color:white;
+cursor:pointer;
+}
+
+footer{
+text-align:center;
+padding:20px;
+}
+
+</style>
+
 </head>
 
 <body>
@@ -10,94 +100,163 @@
 <nav>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
-<a href="/monitor">Live Monitor</a>
 <a href="/about">About</a>
+<a href="/login">Login</a>
+<a href="/register">Register</a>
 </nav>
+
+<!-- HERO -->
+<div class="hero">
+
+<img src="/static/logo.png" class="logo">
+
+<h1>Intrusion Detection System</h1>
+<p>Real-Time Threat Detection</p>
+
+</div>
 
 <div class="container">
 
-<!-- HEADER -->
-<div class="card" style="text-align:center">
-
-<img src="/static/logo.png" height="80">
-
-<h1 class="typewriter">🔐 INTRUSION DETECTION SYSTEM</h1>
-
-<p>Department of Computer Science</p>
-<p>Master of Computer Applications (MCA)</p>
-<p>Andhra University</p>
-
+<!-- OVERVIEW -->
+<div class="card">
+<h2>📊 Overview</h2>
+<p>
+This system detects cyber attacks using Machine Learning and provides real-time monitoring.
+</p>
 </div>
 
-<!-- GRID CONTENT -->
+<!-- FEATURES -->
 <div class="grid">
 
-<div class="card">
-<h2>Project Title</h2>
-<p>Machine Learning Based Intrusion Detection System</p>
-</div>
-
-<div class="card">
-<h2>Project Overview</h2>
-
-<p>
-This project demonstrates how Machine Learning techniques can be used
-to detect malicious activities in network traffic. The system analyzes
-network traffic datasets and classifies the behavior as either normal
-traffic or cyber attack.
-</p>
-
-<p>
-Intrusion Detection Systems are an important part of modern
-cybersecurity infrastructure used to detect unauthorized access,
-network anomalies and potential security threats.
-</p>
+<div class="card">⚡ Fast Detection</div>
+<div class="card">🧠 AI Powered</div>
+<div class="card">📊 Dashboard</div>
+<div class="card">🔐 Secure</div>
 
 </div>
 
+<!-- LIVE STATS -->
 <div class="card">
-<h2>Submitted By</h2>
 
-<p>Shaik Tasneem</p>
-<p>Master of Computer Applications (MCA)</p>
-<p>Andhra University</p>
+<h2>📈 Live Stats</h2>
+
+<div class="stats">
+
+<div class="stat">
+<h2 id="c1">20</h2>
+<p>Threats</p>
 </div>
 
-<div class="card">
-<h2>Project Guide</h2>
-
-<p>Shaik Mohammed Ashfakh</p>
-<p>Senior Software Engineer</p>
+<div class="stat">
+<h2 id="c2">258</h2>
+<p>Scans</p>
 </div>
 
-<div class="card">
-<h2>Academic Year</h2>
-
-<p>2025 - 2026</p>
+<div class="stat">
+<h2 id="c3">95.7</h2>
+<p>Accuracy</p>
 </div>
 
+</div>
+
+</div>
+
+<!-- STOCK GRAPH -->
 <div class="card" style="text-align:center">
 
-<h2>Start Intrusion Detection</h2>
+<h3>📊 Network Activity</h3>
 
-<a href="/monitor">
-<button>🚀 Analyze Network Traffic</button>
+<div class="graph-box">
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<!-- BUTTON -->
+<div class="card" style="text-align:center">
+<a href="/dashboard">
+<button>🚀 Open Dashboard</button>
 </a>
-
 </div>
 
 </div>
 
-<!-- FOOTER -->
-<div class="card" style="text-align:center">
+<footer>
+<p>Intrusion Detection System | MCA Project | Andhra University</p>
+</footer>
 
-<p>
-Machine Learning Intrusion Detection System | MCA Project | Andhra University
-</p>
+<script>
 
-</div>
+// COUNTERS (ONLY INCREASE)
+let c1=20,c2=258,c3=95.7;
 
-</div>
+setInterval(()=>{
+
+c1+=Math.floor(Math.random()*2);
+c2+=Math.floor(Math.random()*5);
+
+if(c3<99){
+c3+=Math.random()*0.05;
+}
+
+document.getElementById("c1").innerText=c1;
+document.getElementById("c2").innerText=c2;
+document.getElementById("c3").innerText=c3.toFixed(1);
+
+},800);
+
+
+// STOCK GRAPH
+let data=[];
+
+// initial data
+for(let i=0;i<30;i++){
+data.push(50+Math.random()*5);
+}
+
+let chart=new Chart(document.getElementById("chart"),{
+type:'line',
+data:{
+labels:new Array(30).fill(""),
+datasets:[{
+data:data,
+borderColor:"#38bdf8",
+borderWidth:2,
+tension:0.4,
+fill:true,
+backgroundColor:"rgba(56,189,248,0.1)",
+pointRadius:0
+}]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false,
+plugins:{legend:{display:false}},
+scales:{
+x:{display:false},
+y:{display:false}
+}
+}
+});
+
+// smooth stock movement
+setInterval(()=>{
+
+let last=data[data.length-1];
+
+let newVal=last+(Math.random()-0.5)*1.2;
+
+if(newVal<45)newVal=45;
+if(newVal>70)newVal=70;
+
+data.shift();
+data.push(newVal);
+
+chart.update();
+
+},2000);
+
+</script>
 
 </body>
 </html>

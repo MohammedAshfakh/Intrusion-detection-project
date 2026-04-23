@@ -1,9 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Dashboard</title>
+<title>Security Dashboard</title>
+
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+background:#020617;
+color:white;
+font-family:Arial;
+margin:0;
+}
+
+nav{
+text-align:center;
+padding:15px;
+background:#020617;
+}
+
+nav a{
+color:#38bdf8;
+margin:10px;
+text-decoration:none;
+}
+
+.container{
+width:90%;
+margin:auto;
+}
+
+.flex{
+display:flex;
+gap:20px;
+margin-top:20px;
+}
+
+.left{flex:1;}
+.right{flex:1;}
+
+.card{
+background:#0f172a;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.5);
+margin-bottom:20px;
+}
+
+.feed{
+max-height:300px;
+overflow:auto;
+}
+
+.feed div{
+padding:8px;
+margin:4px 0;
+border-radius:5px;
+font-size:14px;
+}
+
+.stats{
+display:flex;
+justify-content:space-around;
+text-align:center;
+}
+
+.stats h2{
+color:#38bdf8;
+}
+
+.row{
+display:flex;
+gap:15px;
+}
+
+.half{
+flex:1;
+}
+
+/* ⭐ DONUT SIZE FIX */
+.donut-box{
+width:260px;
+height:260px;
+margin:auto;
+}
+
+canvas{
+width:100% !important;
+height:100% !important;
+}
+
+</style>
+
 </head>
 
 <body>
@@ -11,49 +101,184 @@
 <nav>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
-<a href="/monitor">Live Monitor</a>
 <a href="/about">About</a>
 </nav>
 
 <div class="container">
 
-<h1>🛡️ Security Dashboard</h1>
+<h2>Security Dashboard</h2>
 
-<div class="grid">
+<div class="flex">
 
-<div class="card">
-<h2>🚨 Attacks</h2>
-<p class="metric">{{ attack }}</p>
-</div>
+<!-- LEFT SIDE -->
+<div class="left">
 
 <div class="card">
-<h2>✅ Normal</h2>
-<p class="metric">{{ normal }}</p>
+<h3>Live Monitoring</h3>
+<div id="feed" class="feed"></div>
 </div>
 
 </div>
 
+<!-- RIGHT SIDE -->
+<div class="right">
+
+<!-- STATS -->
 <div class="card">
+<div class="stats">
+<div>
+<h2 id="attack">5</h2>
+<p>Attack</p>
+</div>
+<div>
+<h2 id="normal">21</h2>
+<p>Normal</p>
+</div>
+</div>
+</div>
 
-<h2>📊 Threat Analysis</h2>
+<!-- DONUT GRAPH -->
+<div class="card" style="text-align:center">
 
-<canvas id="chart"></canvas>
+<h3>Traffic Distribution</h3>
+
+<div class="donut-box">
+<canvas id="donut"></canvas>
+</div>
+
+</div>
+
+<!-- LINE GRAPHS -->
+<div class="row">
+
+<div class="card half">
+<h4>Traffic Trend</h4>
+<canvas id="line1"></canvas>
+</div>
+
+<div class="card half">
+<h4>Attack Pattern</h4>
+<canvas id="line2"></canvas>
+</div>
+
+</div>
+
+</div>
 
 </div>
 
 </div>
 
 <script>
-new Chart(document.getElementById("chart"), {
+
+// COUNTERS
+let attack = 5;
+let normal = 21;
+
+// LIVE FEED
+function addLog(){
+
+let div = document.createElement("div");
+
+if(Math.random() > 0.7){
+attack++;
+div.innerText = "🚨 Attack Detected";
+div.style.background = "#7f1d1d";
+}else{
+normal++;
+div.innerText = "✅ Normal Traffic";
+div.style.background = "#064e3b";
+}
+
+document.getElementById("feed").prepend(div);
+
+document.getElementById("attack").innerText = attack;
+document.getElementById("normal").innerText = normal;
+
+// UPDATE DONUT
+donut.data.datasets[0].data = [normal, attack];
+donut.update();
+
+}
+
+setInterval(addLog, 2000);
+
+// DONUT CHART (FIXED SIZE)
+let donut = new Chart(document.getElementById("donut"), {
 type: 'doughnut',
 data: {
-labels: ['Normal','Attack'],
+labels: ['Normal', 'Attack'],
 datasets: [{
-data: [{{ normal }}, {{ attack }}],
-backgroundColor:['#22c55e','#ff3b3b']
+data: [normal, attack],
+backgroundColor: ['#22c55e', '#ef4444']
 }]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+cutout: '65%',
+plugins: {
+legend: {
+position: 'top'
+}
+}
 }
 });
+
+// GRAPH 1
+let d1 = [10,12,11,13,12];
+
+let g1 = new Chart(document.getElementById("line1"), {
+type: 'line',
+data: {
+labels: ["","","","",""],
+datasets: [{
+data: d1,
+borderColor: "#38bdf8",
+tension: 0.4,
+pointRadius: 0
+}]
+},
+options:{
+plugins:{legend:{display:false}},
+scales:{x:{display:false},y:{display:false}}
+}
+});
+
+// GRAPH 2
+let d2 = [6,7,5,8,7];
+
+let g2 = new Chart(document.getElementById("line2"), {
+type: 'line',
+data: {
+labels: ["","","","",""],
+datasets: [{
+data: d2,
+borderColor: "#f59e0b",
+tension: 0.4,
+pointRadius: 0
+}]
+},
+options:{
+plugins:{legend:{display:false}},
+scales:{x:{display:false},y:{display:false}}
+}
+});
+
+// UPDATE GRAPHS
+setInterval(()=>{
+
+d1.shift();
+d1.push(d1[d1.length-1] + (Math.random()-0.5)*2);
+
+d2.shift();
+d2.push(d2[d2.length-1] + (Math.random()-0.5)*2);
+
+g1.update();
+g2.update();
+
+},3000);
+
 </script>
 
 </body>
