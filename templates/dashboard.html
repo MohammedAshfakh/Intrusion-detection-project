@@ -13,17 +13,16 @@
 <h1>🔐 Intrusion Detection Dashboard</h1>
 
 <div class="cards">
-  <div class="card">Total Attacks: <span id="attack">0</span></div>
-  <div class="card">Normal Traffic: <span id="normal">0</span></div>
+  <div class="card">🚨 Attacks: <span id="attack">0</span></div>
+  <div class="card">✅ Normal: <span id="normal">0</span></div>
 </div>
 
-<div id="liveData"></div>
-<div id="status"></div>
+<div id="liveData">Waiting for data...</div>
+<div id="status">Initializing...</div>
 
-<canvas id="chart" width="400" height="200"></canvas>
+<canvas id="chart"></canvas>
 
 <script>
-
 const ctx = document.getElementById('chart').getContext('2d');
 
 let chart = new Chart(ctx, {
@@ -46,18 +45,17 @@ setInterval(() => {
             `Duration: ${data.duration} | Src: ${data.src} | Dst: ${data.dst}`;
 
         document.getElementById("status").innerText =
-            data.result === "Intrusion" ? "🚨 Attack Detected" : "✅ Normal";
+            data.result === "Intrusion"
+            ? "🚨 Intrusion Detected"
+            : "✅ Normal Traffic";
 
         document.getElementById("attack").innerText = data.attack;
         document.getElementById("normal").innerText = data.normal;
 
         chart.data.datasets[0].data = [data.attack, data.normal];
         chart.update();
-
     });
-
 }, 2000);
-
 </script>
 
 </body>

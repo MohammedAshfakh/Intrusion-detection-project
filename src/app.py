@@ -11,13 +11,12 @@ MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
 
-# counters
 attack_count = 0
 normal_count = 0
 
 
 @app.route("/")
-def dashboard():
+def home():
     return render_template("dashboard.html")
 
 
