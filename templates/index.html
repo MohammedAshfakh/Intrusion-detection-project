@@ -1,72 +1,8 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <title>Intrusion Detection System</title>
-
-<style>
-
-body{
-font-family: Arial, sans-serif;
-background:#0f172a;
-color:white;
-margin:0;
-text-align:center;
-}
-
-nav{
-background:#020617;
-padding:15px;
-}
-
-nav a{
-color:#22c55e;
-margin:15px;
-text-decoration:none;
-font-size:18px;
-}
-
-header{
-padding:30px;
-background:#020617;
-}
-
-h1{
-color:#22c55e;
-font-size:40px;
-}
-
-.container{
-width:80%;
-margin:auto;
-margin-top:30px;
-}
-
-.card{
-background:#1e293b;
-padding:25px;
-margin:20px;
-border-radius:10px;
-}
-
-button{
-padding:12px 25px;
-background:#22c55e;
-border:none;
-font-size:18px;
-color:white;
-border-radius:5px;
-cursor:pointer;
-}
-
-footer{
-margin-top:40px;
-padding:20px;
-background:#020617;
-}
-
-</style>
-
+<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
@@ -74,36 +10,34 @@ background:#020617;
 <nav>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
-<a href="/upload">Detect Attack</a>
+<a href="/monitor">Live Monitor</a>
 <a href="/about">About</a>
 </nav>
 
-<header>
+<div class="container">
+
+<!-- HEADER -->
+<div class="card" style="text-align:center">
 
 <img src="/static/logo.png" height="80">
 
-<h1>Andhra University</h1>
+<h1 class="typewriter">🔐 INTRUSION DETECTION SYSTEM</h1>
 
 <p>Department of Computer Science</p>
-
 <p>Master of Computer Applications (MCA)</p>
-
-<p>Academic Project Submission</p>
-
-</header>
-
-<div class="container">
-
-<div class="card">
-
-<h2>Project Title</h2>
-
-<p>Machine Learning Based Intrusion Detection System</p>
+<p>Andhra University</p>
 
 </div>
 
-<div class="card">
+<!-- GRID CONTENT -->
+<div class="grid">
 
+<div class="card">
+<h2>Project Title</h2>
+<p>Machine Learning Based Intrusion Detection System</p>
+</div>
+
+<div class="card">
 <h2>Project Overview</h2>
 
 <p>
@@ -122,53 +56,48 @@ network anomalies and potential security threats.
 </div>
 
 <div class="card">
-
 <h2>Submitted By</h2>
 
 <p>Shaik Tasneem</p>
-
 <p>Master of Computer Applications (MCA)</p>
-
 <p>Andhra University</p>
-
 </div>
 
 <div class="card">
-
 <h2>Project Guide</h2>
 
 <p>Shaik Mohammed Ashfakh</p>
-
 <p>Senior Software Engineer</p>
-
 </div>
 
 <div class="card">
-
 <h2>Academic Year</h2>
 
 <p>2025 - 2026</p>
-
 </div>
 
-<div class="card">
+<div class="card" style="text-align:center">
 
 <h2>Start Intrusion Detection</h2>
 
-<a href="/upload">
-<button>Analyze Network Traffic</button>
+<a href="/monitor">
+<button>🚀 Analyze Network Traffic</button>
 </a>
 
 </div>
 
 </div>
 
-<footer>
+<!-- FOOTER -->
+<div class="card" style="text-align:center">
 
-<p>Machine Learning Intrusion Detection System | MCA Project | Andhra University</p>
+<p>
+Machine Learning Intrusion Detection System | MCA Project | Andhra University
+</p>
 
-</footer>
+</div>
+
+</div>
 
 </body>
-
 </html>

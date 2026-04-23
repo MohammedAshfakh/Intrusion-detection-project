@@ -2,34 +2,8 @@
 <html>
 <head>
 <title>Dashboard</title>
-
-<style>
-body{
-background:#0f172a;
-color:white;
-font-family:Arial;
-text-align:center;
-}
-nav{
-background:#020617;
-padding:15px;
-}
-nav a{
-color:#22c55e;
-margin:15px;
-text-decoration:none;
-}
-
-.card{
-background:#1e293b;
-padding:20px;
-margin:20px;
-border-radius:10px;
-display:inline-block;
-width:200px;
-}
-</style>
-
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -37,38 +11,48 @@ width:200px;
 <nav>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
-<a href="/upload">Detect Attack</a>
+<a href="/monitor">Live Monitor</a>
 <a href="/about">About</a>
 </nav>
 
-<h1>📊 Intrusion Detection Dashboard</h1>
+<div class="container">
+
+<h1>🛡️ Security Dashboard</h1>
+
+<div class="grid">
 
 <div class="card">
 <h2>🚨 Attacks</h2>
-<p>{{ attack }}</p>
+<p class="metric">{{ attack }}</p>
 </div>
 
 <div class="card">
 <h2>✅ Normal</h2>
-<p>{{ normal }}</p>
+<p class="metric">{{ normal }}</p>
 </div>
 
-<h2>📈 Traffic Distribution</h2>
+</div>
 
-<canvas id="chart" width="300" height="300"></canvas>
+<div class="card">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<h2>📊 Threat Analysis</h2>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+</div>
 
 <script>
-var ctx = document.getElementById('chart').getContext('2d');
-var chart = new Chart(ctx, {
-    type: 'pie',
-    data: {
-        labels: ['Normal', 'Attack'],
-        datasets: [{
-            data: [{{ normal }}, {{ attack }}],
-        }]
-    }
+new Chart(document.getElementById("chart"), {
+type: 'doughnut',
+data: {
+labels: ['Normal','Attack'],
+datasets: [{
+data: [{{ normal }}, {{ attack }}],
+backgroundColor:['#22c55e','#ff3b3b']
+}]
+}
 });
 </script>
 
