@@ -1,44 +1,64 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-<title>Security Dashboard</title>
+<title>IDS Dashboard</title>
+
 <link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
 
-<nav>
-<a href="/">Home</a>
-<a href="/dashboard">Dashboard</a>
-<a href="/upload">Detect Attack</a>
-<a href="/about">About</a>
-</nav>
+<h1>🔐 Intrusion Detection Dashboard</h1>
 
-<h1>Cyber Security Dashboard</h1>
-
-<div class="card">
-
-<h2>Total Traffic Analyzed</h2>
-<h1>{{ total }}</h1>
-
+<div class="cards">
+  <div class="card">Total Attacks: <span id="attack">0</span></div>
+  <div class="card">Normal Traffic: <span id="normal">0</span></div>
 </div>
 
-<div class="card">
+<div id="liveData"></div>
+<div id="status"></div>
 
-<h2>Detected Attacks</h2>
-<h1>{{ attacks }}</h1>
+<canvas id="chart" width="400" height="200"></canvas>
 
-</div>
+<script>
 
-<div class="card">
+const ctx = document.getElementById('chart').getContext('2d');
 
-<h2>Normal Traffic</h2>
-<h1>{{ normal }}</h1>
+let chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Attack', 'Normal'],
+        datasets: [{
+            data: [0, 0],
+            backgroundColor: ['red', 'green']
+        }]
+    }
+});
 
-</div>
+setInterval(() => {
+    fetch("/live")
+    .then(res => res.json())
+    .then(data => {
 
-<p>Refresh the page to see updated network statistics.</p>
+        document.getElementById("liveData").innerText =
+            `Duration: ${data.duration} | Src: ${data.src} | Dst: ${data.dst}`;
+
+        document.getElementById("status").innerText =
+            data.result === "Intrusion" ? "🚨 Attack Detected" : "✅ Normal";
+
+        document.getElementById("attack").innerText = data.attack;
+        document.getElementById("normal").innerText = data.normal;
+
+        chart.data.datasets[0].data = [data.attack, data.normal];
+        chart.update();
+
+    });
+
+}, 2000);
+
+</script>
 
 </body>
 </html>
