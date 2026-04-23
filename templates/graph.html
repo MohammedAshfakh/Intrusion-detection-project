@@ -10,93 +10,60 @@
 
 <body>
 
-<header>
-    <h1>🔐 Intrusion Detection Dashboard</h1>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/graph">Graph</a>
-        <a href="/about">About</a>
-    </nav>
-</header>
-
-<h2>Traffic Analysis</h2>
+<h1>🔐 Intrusion Detection Dashboard</h1>
 
 <div class="dashboard">
 
-    <!-- LEFT GRAPH -->
     <div class="graph-box">
         <canvas id="chart"></canvas>
     </div>
 
-    <!-- RIGHT STATS -->
     <div class="stats-box">
-        <div class="stat-card">
-            🚨 Attacks
-            <h3 id="attack">0</h3>
-        </div>
-
-        <div class="stat-card">
-            ✅ Normal
-            <h3 id="normal">0</h3>
-        </div>
-
-        <div class="stat-card">
-            📡 Status
-            <h3 id="status">Waiting...</h3>
-        </div>
-
-        <div class="stat-card">
-            📊 Data
-            <p id="liveData">Loading...</p>
-        </div>
+        <div class="stat-card">🚨 Attacks <h3 id="attack">0</h3></div>
+        <div class="stat-card">✅ Normal <h3 id="normal">0</h3></div>
+        <div class="stat-card">📡 Status <h3 id="status">Loading...</h3></div>
+        <div class="stat-card">📊 Data <p id="liveData">Waiting...</p></div>
     </div>
 
 </div>
 
-<footer>
-    <p>© IDS Project | MCA</p>
-</footer>
-
 <script>
+window.onload = function () {
 
-const ctx = document.getElementById('chart').getContext('2d');
+    const ctx = document.getElementById('chart').getContext('2d');
 
-let chart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Attack', 'Normal'],
-        datasets: [{
-            data: [0, 0],
-            backgroundColor: ['red', 'green']
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-
-setInterval(() => {
-    fetch("/live")
-    .then(res => res.json())
-    .then(data => {
-
-        document.getElementById("attack").innerText = data.attack;
-        document.getElementById("normal").innerText = data.normal;
-
-        document.getElementById("liveData").innerText =
-            `Duration: ${data.duration} | Src: ${data.src} | Dst: ${data.dst}`;
-
-        document.getElementById("status").innerText =
-            data.result === "Intrusion"
-            ? "🚨 Intrusion Detected"
-            : "✅ Normal Traffic";
-
-        chart.data.datasets[0].data = [data.attack, data.normal];
-        chart.update();
+    let chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Attack', 'Normal'],
+            datasets: [{
+                data: [0, 0],
+                backgroundColor: ['red', 'green']
+            }]
+        }
     });
-}, 2000);
 
+    setInterval(() => {
+        fetch("/live")
+        .then(res => res.json())
+        .then(data => {
+
+            document.getElementById("attack").innerText = data.attack;
+            document.getElementById("normal").innerText = data.normal;
+
+            document.getElementById("liveData").innerText =
+                `Duration: ${data.duration} | Src: ${data.src} | Dst: ${data.dst}`;
+
+            document.getElementById("status").innerText =
+                data.result === "Intrusion"
+                ? "🚨 Intrusion Detected"
+                : "✅ Normal Traffic";
+
+            chart.data.datasets[0].data = [data.attack, data.normal];
+            chart.update();
+        });
+    }, 2000);
+};
 </script>
 
 </body>
