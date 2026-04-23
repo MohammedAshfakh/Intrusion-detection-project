@@ -1,67 +1,62 @@
-from flask import Flask, render_template, jsonify
-import pickle
+from flask import Flask, render_template, request
+import numpy as np
+import joblib
 import os
-import random
 
-app = Flask(__name__, template_folder="../templates", static_folder="../static")
+app = Flask(__name__)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
+# Load model
+model = joblib.load("model.pkl")
 
-with open(MODEL_PATH, "rb") as f:
-    model = pickle.load(f)
-
+# Counters for dashboard
 attack_count = 0
 normal_count = 0
 
-
-# ✅ KEEP YOUR INDEX PAGE
-@app.route("/")
-def index():
+@app.route('/')
+def home():
     return render_template("index.html")
 
-
-# ✅ KEEP YOUR ABOUT PAGE
-@app.route("/about")
+@app.route('/about')
 def about():
     return render_template("about.html")
 
-
-# ⭐ NEW GRAPH PAGE
-@app.route("/graph")
-def graph():
-    return render_template("graph.html")
-
-
-# 🔥 LIVE DATA
-@app.route("/live")
-def live():
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
     global attack_count, normal_count
 
-    duration = random.randint(0, 2)
-    src_bytes = random.randint(50, 10000)
-    dst_bytes = random.randint(10, 500)
+    if request.method == 'POST':
+        try:
+            features = []
+            for i in range(10):  # 🔁 change if your model has different features
+                val = float(request.form[f"f{i}"])
+                features.append(val)
 
-    features = [[duration, src_bytes, dst_bytes]]
-    prediction = model.predict(features)
+            data = np.array(features).reshape(1, -1)
+            prediction = model.predict(data)[0]
 
-    if prediction[0] == 1:
-        result = "Intrusion"
-        attack_count += 1
-    else:
-        result = "Normal"
-        normal_count += 1
+            # Logging
+            with open("logs.txt", "a") as f:
+                f.write(str(prediction) + "\n")
 
-    return jsonify({
-        "duration": duration,
-        "src": src_bytes,
-        "dst": dst_bytes,
-        "result": result,
-        "attack": attack_count,
-        "normal": normal_count
-    })
+            if prediction == 1:
+                attack_count += 1
+                result = "🚨 Attack Detected"
+            else:
+                normal_count += 1
+                result = "✅ Normal Traffic"
 
+            return render_template("upload.html", result=result)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+        except:
+            return render_template("upload.html", result="⚠️ Error in input")
+
+    return render_template("upload.html")
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template("dashboard.html",
+                           attack=attack_count,
+                           normal=normal_count)
+
+if __name__ == '__main__':
+    app.run(debug=True)

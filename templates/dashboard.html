@@ -1,37 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+
+<style>
+body{
+background:#0f172a;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+nav{
+background:#020617;
+padding:15px;
+}
+nav a{
+color:#22c55e;
+margin:15px;
+text-decoration:none;
+}
+
+.card{
+background:#1e293b;
+padding:20px;
+margin:20px;
+border-radius:10px;
+display:inline-block;
+width:200px;
+}
+</style>
+
+</head>
+
+<body>
+
+<nav>
+<a href="/">Home</a>
+<a href="/dashboard">Dashboard</a>
+<a href="/upload">Detect Attack</a>
+<a href="/about">About</a>
+</nav>
+
+<h1>📊 Intrusion Detection Dashboard</h1>
+
+<div class="card">
+<h2>🚨 Attacks</h2>
+<p>{{ attack }}</p>
+</div>
+
+<div class="card">
+<h2>✅ Normal</h2>
+<p>{{ normal }}</p>
+</div>
+
+<h2>📈 Traffic Distribution</h2>
+
+<canvas id="chart" width="300" height="300"></canvas>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const ctx = document.getElementById('chart').getContext('2d');
-
-let chart = new Chart(ctx, {
-    type: 'doughnut',
+var ctx = document.getElementById('chart').getContext('2d');
+var chart = new Chart(ctx, {
+    type: 'pie',
     data: {
-        labels: ['Attack', 'Normal'],
+        labels: ['Normal', 'Attack'],
         datasets: [{
-            data: [0, 0],
-            backgroundColor: ['red', 'green']
+            data: [{{ normal }}, {{ attack }}],
         }]
     }
 });
-
-setInterval(() => {
-    fetch("/live")
-    .then(res => res.json())
-    .then(data => {
-
-        document.getElementById("liveData").innerText =
-            `Duration: ${data.duration} | Src: ${data.src} | Dst: ${data.dst}`;
-
-        document.getElementById("status").innerText =
-            data.result === "Intrusion"
-            ? "🚨 Intrusion Detected"
-            : "✅ Normal Traffic";
-
-        document.getElementById("attack").innerText = data.attack;
-        document.getElementById("normal").innerText = data.normal;
-
-        chart.data.datasets[0].data = [data.attack, data.normal];
-        chart.update();
-    });
-}, 2000);
 </script>
+
+</body>
+</html>
