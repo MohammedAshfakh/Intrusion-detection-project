@@ -15,11 +15,19 @@ attack_count = 0
 normal_count = 0
 
 
+# 🔥 MAIN PAGE → YOUR DASHBOARD
 @app.route("/")
 def home():
     return render_template("dashboard.html")
 
 
+# OPTIONAL → KEEP ABOUT PAGE
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+# 🔥 LIVE AUTO DETECTION
 @app.route("/live")
 def live():
     global attack_count, normal_count
