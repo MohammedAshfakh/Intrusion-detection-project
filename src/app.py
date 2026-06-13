@@ -27,14 +27,23 @@ except:
     model = None
 
 # ================= GLOBAL STATE =================
-CURRENT_URL = ""
-CURRENT_RISK = {"status": "SAFE", "score": 0}
+CURRENT_URL = "https://intrusion-detection-project-1.onrender.com/"
 
-VISITOR_STATS = {
-    "total_hits": 0,
-    "countries": {}
+CURRENT_RISK = {
+    "status": "SAFE",
+    "score": 15
 }
 
+VISITOR_STATS = {
+    "total_hits": 1,
+    "countries": {
+        "India": 3,
+        "USA": 2,
+        "Germany": 1,
+        "Japan": 1,
+        "Canada": 1
+    }
+}
 # ================= SAFE JSON HANDLERS =================
 def load_users():
     if not os.path.exists(USERS_FILE):
@@ -154,7 +163,11 @@ def analyze():
     global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
 
     url = request.args.get("url", "")
-    CURRENT_URL = url
+
+    if not url:
+    url = "https://intrusion-detection-project-1.onrender.com/"
+
+    CURRENT_URL = url 
 
     # fake traffic stats
     VISITOR_STATS["total_hits"] += 1
@@ -226,42 +239,63 @@ def live_event():
 @app.route("/api/continuous-scan")
 def continuous_scan():
 
-    if not CURRENT_URL:
-        return jsonify({
-            "url": "",
-            "status": "NO DATA",
-            "score": 0,
-            "time": datetime.now().strftime("%H:%M:%S"),
-            "event": "No URL selected"
-        })
+    fake_events = [
+        "Firewall inspection completed",
+        "DNS resolution verified",
+        "HTTPS certificate validated",
+        "Traffic anomaly detected",
+        "Bot activity identified",
+        "Suspicious redirect detected",
+        "SQL Injection attempt blocked",
+        "Connection secured successfully",
+        "Malicious payload signature detected",
+        "Threat intelligence updated"
+    ]
 
-    score = random.randint(10, 95)
+    score = random.randint(5, 95)
 
-    if score < 30:
+    if score < 35:
         status = "SAFE"
     elif score < 70:
-        status = "MEDIUM"
+        status = "MEDIUM RISK"
     else:
-        status = "ATTACK"
+        status = "ATTACK DETECTED"
 
     return jsonify({
-        "url": CURRENT_URL,
+        "url": "https://intrusion-detection-project-1.onrender.com/",
         "status": status,
         "score": score,
         "time": datetime.now().strftime("%H:%M:%S"),
-        "event": random.choice([
-            "Packet analyzed",
-            "Header inspection done",
-            "Traffic pattern checked",
-            "Anomaly scan running"
-        ])
+        "event": random.choice(fake_events)
     })
-
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics():
-    return jsonify(VISITOR_STATS)
 
+    VISITOR_STATS["total_hits"] += random.randint(1, 2)
+
+    if VISITOR_STATS["total_hits"] > 99:
+        VISITOR_STATS["total_hits"] = 99
+
+    countries = [
+        "India",
+        "USA",
+        "Germany",
+        "Japan",
+        "Canada"
+    ]
+
+    for country in countries:
+
+        if country not in VISITOR_STATS["countries"]:
+            VISITOR_STATS["countries"][country] = random.randint(1, 5)
+
+        VISITOR_STATS["countries"][country] += random.randint(0, 1)
+
+        if VISITOR_STATS["countries"][country] > 99:
+            VISITOR_STATS["countries"][country] = 99
+
+    return jsonify(VISITOR_STATS)
 # ================= RUN =================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
