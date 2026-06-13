@@ -6,7 +6,7 @@ import joblib
 import re
 import random
 
-# ================= BASE =================
+# ================= BASE SETUP =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -20,20 +20,25 @@ app.secret_key = "secure_ai_soc_key_123"
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
-# ================= LOAD MODEL =================
+# ================= LOAD ML MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
 except:
     model = None
 
-# ================= USER SYSTEM =================
+# ================= DATABASE (JSON FILE) =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
-    return json.load(open(USERS_FILE))
+    try:
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return []
 
 def save_users(users):
-    json.dump(users, open(USERS_FILE, "w"), indent=4)
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
 
 # ================= FEATURE ENGINEERING =================
 def extract_features(url):
@@ -67,7 +72,7 @@ def scan():
     return render_template("scan.html")
 
 @app.route("/analytics")
-def analytics_page():
+def analytics():
     return render_template("analytics.html")
 
 @app.route("/about")
@@ -75,38 +80,56 @@ def about():
     return render_template("about.html")
 
 # ================= AUTH =================
+
+# LOGIN (READ from JSON DB)
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        email = request.form.get("email")
+        password = request.form.get("password")
 
         users = load_users()
 
-        for u in users:
-            if u["email"] == email and u["password"] == password:
+        for user in users:
+            if user["email"] == email and user["password"] == password:
                 session["user"] = email
                 return redirect("/dashboard")
 
-        return "Invalid login"
+        return "❌ Invalid email or password"
 
     return render_template("login.html")
 
+
+# REGISTER (WRITE into JSON DB)
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
         users = load_users()
 
+        # check duplicate
+        for user in users:
+            if user["email"] == email:
+                return "⚠️ User already exists"
+
+        # append new user
         users.append({
-            "name": request.form["name"],
-            "email": request.form["email"],
-            "password": request.form["password"]
+            "name": name,
+            "email": email,
+            "password": password,
+            "created_at": str(datetime.now())
         })
 
         save_users(users)
+
         return redirect("/login")
 
     return render_template("register.html")
+
 
 @app.route("/logout")
 def logout():
@@ -144,40 +167,37 @@ def analyze():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-# ================= LIVE EVENT =================
+# ================= LIVE EVENTS =================
 @app.route("/api/live-event")
 def live_event():
 
-    safe_events = [
-        "DNS request resolved successfully",
+    events = [
+        "DNS resolved successfully",
         "HTTPS handshake verified",
+        "SQL Injection attempt blocked",
+        "Suspicious redirect detected",
+        "Brute force attack stopped",
         "No anomaly detected"
     ]
 
-    threat_events = [
-        "SQL Injection pattern detected",
-        "Brute force attempt blocked",
-        "Suspicious redirect found",
-        "Malicious payload signature matched"
-    ]
-
-    msg = random.choice(safe_events + threat_events)
-
     return jsonify({
-        "message": msg,
+        "message": random.choice(events),
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-# ================= ANALYTICS =================
+# ================= ANALYTICS API =================
 @app.route("/api/analytics")
-def analytics():
+def analytics_api():
+    users = load_users()
+
     return jsonify({
-        "total_hits": random.randint(100, 500),
+        "total_users": len(users),
+        "users": users,
         "countries": {
             "India": random.randint(20, 100),
-            "USA": random.randint(10, 80),
-            "Germany": random.randint(5, 50),
-            "Japan": random.randint(5, 40)
+            "USA": random.randint(10, 70),
+            "Germany": random.randint(5, 40),
+            "Japan": random.randint(5, 30)
         }
     })
 
