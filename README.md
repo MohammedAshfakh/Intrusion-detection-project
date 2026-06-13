@@ -1,197 +1,212 @@
-# Machine Learning Based Intrusion Detection System
+# 🛡 AI Security Operations Center (SOC) - Intrusion Detection System
 
 ## MCA Project – Andhra University
 
-This project demonstrates how **Machine Learning** can be used to detect malicious activities in network traffic.
-The system analyzes network traffic data and classifies it as either **Normal Traffic** or **Cyber Attack**.
+This project demonstrates how **Machine Learning + Flask Web Development** can be used to build a **Security Operations Center (SOC) style Intrusion Detection System**.
 
-The project is implemented as a **web application using Python Flask** and runs on **Ubuntu Linux (VM environment)**.
+The system analyzes website URLs, simulates cyber attack detection, and displays a **real-time SOC dashboard** with threat intelligence, live scanning, and analytics.
 
----
-
-# Project Title
-
-Machine Learning Based Intrusion Detection System for Network Security
+The project is deployed as a web application using **Python Flask** and hosted on **Render Cloud Platform**.
 
 ---
 
-# Developed By
+# 🌐 Live Project
 
-Shaik Tasneem
-Master of Computer Applications (MCA)
-Andhra University
+https://intrusion-detection-project-1.onrender.com/
 
 ---
 
-# Project Guide
+# 👨‍🎓 Developed By
 
-Mohammed Ashfakh
-Web developer, Cloud & Cybersecurity Engineer
-
----
-
-# Academic Year
-
-2025 – 2026
+Shaik Tasneem  
+Master of Computer Applications (MCA)  
+Andhra University  
 
 ---
 
-# System Requirements
+# 👨‍🏫 Project Guide
 
-Operating System:
-Ubuntu Linux (Virtual Machine)
-
-Software Requirements:
-
-Python 3
-Flask
-Pandas
-Scikit-learn
-
-Browser:
-Chrome / Firefox
+Mohammed Ashfakh  
+Web Developer, Cloud & Cybersecurity Engineer  
 
 ---
 
-# Project Structure
+# 📅 Academic Year
+
+2025 – 2026  
+
+---
+
+--------------------------------------------------
+
+# 💡 Project Objective
+
+The main objective of this project is to simulate a **SOC (Security Operations Center)** environment that:
+
+- Detects malicious URLs using Machine Learning
+- Displays real-time threat scores
+- Simulates live cyber attack intelligence
+- Tracks fake global traffic analytics
+- Provides a dashboard for cybersecurity monitoring
+
+---
+
+--------------------------------------------------
+
+# ⚙ System Requirements
+
+## 🖥 Operating System:
+- Ubuntu Linux / Windows / MacOS
+
+## 🧠 Software Requirements:
+- Python 3.x
+- Flask
+- Pandas
+- NumPy
+- Scikit-learn
+- Joblib
+
+## 🌐 Browser:
+- Google Chrome / Firefox
 
 
+--------------------------------------------------
+
+# 📁 Project Structure
 intrusion-detection-project-ML
 │
 ├── README.md
 ├── requirements.txt
 │
-├── dataset
-│   ├── dataset.csv
-│   ├── normal_traffic.csv
-│   └── attack_traffic.csv
+├── dataset/
+│ └── dataset.csv (optional training data)
 │
-├── model
-│   └── model.pkl
+├── model/
+│ └── model.pkl (trained ML model)
 │
-├── results
-│   └── predictions.txt
+├── results/
+│ └── predictions.txt
 │
-├── src
-│   ├── app.py
-│   └── train_model.py
+├── src/
+│ └── app.py (Flask backend + SOC logic)
 │
-├── templates
-│   ├── index.html
-│   ├── dashboard.html
-│   ├── upload.html
-│   ├── result.html
-│   └── about.html
+├── templates/
+│ ├── index.html
+│ ├── dashboard.html
+│ ├── scan.html
+│ ├── analytics.html
+│ └── about.html
 │
-├── static
-│   ├── style.css
-│   └── logo.png
+├── static/
+│ ├── style.css
+│ └── logo.png
 │
-├── scripts
-│   ├── install-libraries.sh
-│   └── verify-installation.sh
-│
-└── website-theme
-    └── theme-notes.txt
+├── users.json (simple JSON database)
+└── Procfile (Render deployment)
 
 
 ---
+-------------------------------------------------------------
 
-# Installation (Ubuntu)
+# 🚀 Installation & Setup
 
-Update system:
+## 1️⃣ Install dependencies
 
-
-sudo apt update
-
-
-Install required Python libraries:
-
-
-sudo apt install python3-flask python3-pandas python3-sklearn -y
-
-
----
-
-# Train the Machine Learning Model
-
-Run:
-
-
-python3 src/train_model.py
-
-
-This will generate the trained model:
-
-
-model/model.pkl
-
-
----
-
-# Run the Web Application
-
-Start the Flask server:
-
-
-python3 src/app.py
-
-
----
-
-# Open the Website
-
-Open browser and visit:
-
-
+```bash
+pip install -r requirements.txt
+2️⃣ Run the application locally
+python src/app.py
+3️⃣ Open in browser
 http://localhost:5000
+☁ Deployment (Render)
 
+The project is deployed using Render cloud hosting.
 
-If running on VM server:
+-------------------------------------------------------------
+🌐 Live URL:
 
+https://intrusion-detection-project-1.onrender.com/
 
-http://SERVER-IP:5000
+-------------------------------------------------------------
+🧠 How the System Works
+User opens the SOC dashboard
+User enters a URL for analysis
+System generates a threat score using ML/simulation
+URL is classified as:
+SAFE
+MEDIUM RISK
+ATTACK
+Live SOC feed displays simulated cyber events
+Analytics page shows fake global traffic data
+Live scan page continuously monitors the URL
+-------------------------------------------------------------
+🔥 Key Features
+🛡 SOC Dashboard
+Real-time threat score monitoring
+Live attack feed simulation
+⚡ URL Threat Detection
+ML-based / simulated classification
+Risk scoring system (0–100)
+🌍 Analytics System
+Fake global traffic visualization
+Country-wise visitor simulation
+📡 Live Scan Module
+Continuous scanning every few seconds
+Real-time status updates
+🔐 Authentication System
+User registration and login
+JSON-based database (users.json)
+-------------------------------------------------------------
+🧪 Technologies Used
+Backend:
+Python
+Flask
+Machine Learning:
+Scikit-learn
+Pandas
+NumPy
+Joblib
+Frontend:
+HTML5
+CSS3
+JavaScript
+Chart.js
+Deployment:
+Render Cloud Platform
+-------------------------------------------------------------
+⚠ Limitations
+Traffic data is simulated (not real-world network packets)
+No real IDS packet capture
+Uses JSON instead of full database system
+ML model is simplified for academic use
+-------------------------------------------------------------
+🚀 Future Enhancements
+Real-time packet sniffing (Scapy / Wireshark integration)
+WebSocket live updates (no refresh system)
+Advanced deep learning intrusion detection
+IP geolocation tracking
+Admin dashboard panel
+Email alert system for threats
+Cloud database integration (MongoDB / PostgreSQL)
 
+-------------------------------------------------------------
 
----
+🎯 Conclusion
 
-# How the System Works
+This project demonstrates a SOC-style cybersecurity monitoring system using Machine Learning and Flask.
 
-1. User uploads network traffic dataset
-2. System reads the dataset
-3. Machine learning model analyzes the data
-4. Traffic is classified as **Normal** or **Attack**
-5. Result is displayed on the website
+It helps understand:
 
----
+Intrusion Detection Systems (IDS)
+Real-time security monitoring
+Cybersecurity analytics
+SOC operations in a simulated environment
 
-# Features
+It is suitable for MCA academic submission and cybersecurity portfolio projects.
+---------------------------------------------------------------------------
 
-Machine Learning based intrusion detection
-Web-based user interface
-Upload dataset for analysis
-Dynamic cybersecurity dashboard
-Detection of normal and malicious traffic
+📌 License
 
----
+This project is developed for academic purposes as part of MCA program at Andhra University.
 
-# Future Improvements
-
-Real-time network packet monitoring
-Graph-based attack visualization
-Integration with real IDS datasets (NSL-KDD, CICIDS2017)
-User authentication system
-Database logging of detected attacks
-
----
-
-# Conclusion
-
-This project demonstrates how **Machine Learning techniques can enhance cybersecurity systems** by detecting abnormal network traffic and potential threats.
-
----
-
-# License
-
-This project is developed for **academic purposes as part of the MCA program at Andhra University**.
 
