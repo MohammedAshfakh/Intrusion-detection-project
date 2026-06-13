@@ -3,6 +3,16 @@ import os
 import json
 from datetime import datetime
 import random
+import joblib
+import re
+
+# OPTIONAL IMPORT (SAFE FALLBACK)
+try:
+    from reportlab.pdfgen import canvas
+    REPORTLAB_AVAILABLE = True
+except:
+    REPORTLAB_AVAILABLE = False
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -15,13 +25,20 @@ app = Flask(
 app.secret_key = "secret123"
 
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
-# ===================== GLOBAL STATE =====================
+# ================= LOAD MODEL =================
+try:
+    model = joblib.load(MODEL_PATH)
+except:
+    model = None
+
+# ================= STATE =================
 CURRENT_URL = ""
-CURRENT_RISK = {"status": "SAFE", "score": 10}
+CURRENT_RISK = {"status": "SAFE", "score": 0}
 
 
-# ===================== USERS =====================
+# ================= USERS =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
@@ -33,7 +50,7 @@ def save_users(users):
         json.dump(users, f, indent=4)
 
 
-# ===================== ROUTES =====================
+# ================= PAGES =================
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -51,7 +68,7 @@ def about():
     return render_template("about.html")
 
 
-# ===================== LOGIN =====================
+# ================= AUTH =================
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
@@ -60,17 +77,16 @@ def login():
 
         users = load_users()
 
-        for user in users:
-            if user["email"] == email and user["password"] == password:
+        for u in users:
+            if u["email"] == email and u["password"] == password:
                 session["user"] = email
-                return redirect('/dashboard')
+                return redirect("/dashboard")
 
-        return "Invalid Login"
+        return "Invalid login"
 
     return render_template("login.html")
 
 
-# ===================== REGISTER =====================
 @app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
@@ -84,27 +100,33 @@ def register():
             if u["email"] == email:
                 return "User already exists"
 
-        users.append({
-            "name": name,
-            "email": email,
-            "password": password
-        })
-
+        users.append({"name": name, "email": email, "password": password})
         save_users(users)
 
-        return redirect('/login')
+        return redirect("/login")
 
     return render_template("register.html")
 
 
-# ===================== LOGOUT =====================
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/login')
+    return redirect("/login")
 
 
-# ===================== ANALYZE URL =====================
+# ================= FEATURE ENGINEERING =================
+def extract_features(url):
+    return [[
+        len(url),
+        url.count("."),
+        url.count("-"),
+        url.count("@"),
+        1 if "https" in url else 0,
+        len(re.findall(r"\d", url))
+    ]]
+
+
+# ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
 
@@ -113,28 +135,29 @@ def analyze():
     url = request.args.get("url", "")
     CURRENT_URL = url
 
-    score = 0
+    if model:
+        try:
+            pred = model.predict(extract_features(url))[0]
 
-    if "login" in url or "admin" in url:
-        score += 60
-    if "@" in url:
-        score += 20
-    if len(url) > 50:
-        score += 20
-
-    if score < 30:
-        status = "SAFE"
-    elif score < 70:
-        status = "MEDIUM RISK"
+            if pred == 0:
+                status = "SAFE"
+                score = 20
+            else:
+                status = "ATTACK"
+                score = 85
+        except:
+            status = "SAFE"
+            score = 10
     else:
-        status = "HIGH RISK"
+        status = "MEDIUM RISK"
+        score = 50
 
     CURRENT_RISK = {"status": status, "score": score}
 
     return jsonify(CURRENT_RISK)
 
 
-# ===================== LIVE FEED =====================
+# ================= LIVE FEED =================
 @app.route("/api/live-event")
 def live_event():
 
@@ -144,31 +167,21 @@ def live_event():
     safe_events = [
         "DNS Resolution Successful",
         "Secure HTTPS Connection",
-        "Firewall Operational",
-        "No Suspicious Activity Found"
+        "Firewall Operational"
     ]
 
-    medium_events = [
-        "Unusual Traffic Pattern Detected",
-        "Rate Limit Warning Triggered",
-        "Multiple Requests Observed"
-    ]
-
-    threat_events = [
-        "SQL Injection Signature Detected",
-        "Brute Force Attempt Detected",
-        "Malicious Payload Found",
-        "Unauthorized Access Attempt"
+    attack_events = [
+        "SQL Injection Attempt Detected",
+        "Brute Force Attack Pattern",
+        "Malicious URL Detected",
+        "Suspicious Redirect Found"
     ]
 
     if status == "SAFE":
         msg = random.choice(safe_events)
         t = "safe"
-    elif status == "MEDIUM RISK":
-        msg = random.choice(medium_events)
-        t = "threat"
     else:
-        msg = random.choice(threat_events)
+        msg = random.choice(attack_events)
         t = "threat"
 
     return jsonify({
@@ -180,7 +193,28 @@ def live_event():
     })
 
 
-# ===================== RUN =====================
-if __name__ == '__main__':
+# ================= REPORT =================
+@app.route("/api/report")
+def report():
+
+    if not REPORTLAB_AVAILABLE:
+        return jsonify({"error": "reportlab not installed"})
+
+    file_path = os.path.join(BASE_DIR, "static", "report.pdf")
+
+    c = canvas.Canvas(file_path)
+
+    c.drawString(100, 750, "AI Security SOC Report")
+    c.drawString(100, 730, f"URL: {CURRENT_URL}")
+    c.drawString(100, 710, f"Status: {CURRENT_RISK['status']}")
+    c.drawString(100, 690, f"Score: {CURRENT_RISK['score']}")
+
+    c.save()
+
+    return jsonify({"report_url": "/static/report.pdf"})
+
+
+# ================= RUN =================
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)

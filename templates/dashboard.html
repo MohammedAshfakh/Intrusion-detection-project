@@ -1,45 +1,205 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Security Dashboard</title>
+<title>AI SOC Security Center</title>
 
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+margin:0;
+font-family:'Segoe UI';
+background:#0b0f19;
+color:#e6edf3;
+}
+
+/* NAV */
+nav{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 25px;
+background:#111827;
+border-bottom:1px solid #1f2937;
+}
+
+.nav-left a{
+margin-right:15px;
+color:#58a6ff;
+text-decoration:none;
+font-weight:500;
+}
+
+.nav-right a{
+margin-left:10px;
+color:#e6edf3;
+text-decoration:none;
+padding:6px 10px;
+border-radius:6px;
+background:#1f2937;
+}
+
+.nav-right a:hover{
+background:#374151;
+}
+
+/* GRID */
+.container{
+width:95%;
+margin:auto;
+padding:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+/* CARD */
+.card{
+background:#111827;
+border:1px solid #1f2937;
+padding:20px;
+border-radius:12px;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-3px);
+}
+
+/* INPUT */
+input{
+width:70%;
+padding:10px;
+border-radius:6px;
+border:1px solid #374151;
+background:#0b0f19;
+color:white;
+}
+
+button{
+padding:10px 14px;
+border:none;
+border-radius:6px;
+background:#238636;
+color:white;
+cursor:pointer;
+font-weight:bold;
+}
+
+button:hover{
+background:#2ea043;
+}
+
+/* FEED */
+.feed{
+height:320px;
+overflow:auto;
+background:#0b0f19;
+border:1px solid #1f2937;
+padding:10px;
+border-radius:10px;
+}
+
+.log{
+padding:6px;
+margin:5px 0;
+font-size:13px;
+border-radius:6px;
+}
+
+.safe{background:#052e16;border-left:4px solid #22c55e;}
+.threat{background:#3b0a0a;border-left:4px solid #ef4444;}
+
+/* STATUS */
+.badge{
+padding:5px 10px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+}
+
+.safe-b{background:#166534;}
+.med-b{background:#a16207;}
+.high-b{background:#991b1b;}
+
+/* HERO */
+.hero{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.glow{
+color:#58a6ff;
+}
+
+.small{
+font-size:13px;
+color:#9ca3af;
+}
+
+</style>
 
 </head>
 
 <body>
 
+<!-- NAV -->
 <nav>
+
+<div class="nav-left">
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
 <a href="/about">About</a>
-<a href="/logout">Logout</a>
+</div>
+
+<div class="nav-right" id="authBox">
+<!-- dynamic -->
+</div>
+
 </nav>
 
 <div class="container">
 
-<h2>🛡 AI Security Command Center</h2>
+<div class="hero">
+<div>
+<h2 class="glow">🛡 AI Security Operations Center</h2>
+<p class="small">Real-time URL Threat Intelligence System</p>
+</div>
+</div>
 
+<!-- INPUT -->
 <div class="card">
 
-<input id="url" placeholder="Enter website URL">
-<button onclick="analyzeURL()">Analyze</button>
+<h3>Analyze Website</h3>
 
-<div id="resultText"></div>
+<input id="url" placeholder="Enter URL (https://example.com)">
+<button onclick="analyze()">Scan</button>
+
+<div id="result"></div>
 
 </div>
 
+<!-- GRID -->
 <div class="grid">
 
+<!-- FEED -->
 <div class="card">
-<h3>🔥 Live Feed</h3>
-<div id="feed" class="feed"></div>
+<h3>🔥 Live Threat Intelligence Feed</h3>
+<div class="feed" id="feed"></div>
 </div>
 
+<!-- STATUS -->
 <div class="card">
-<h3>📊 Risk Graph</h3>
-<canvas id="chart"></canvas>
+<h3>📊 Risk Monitor</h3>
+<h1 id="score">0</h1>
+<div id="badge"></div>
 </div>
 
 </div>
@@ -48,88 +208,71 @@
 
 <script>
 
-let chart;
 let currentURL = "";
 
-// INIT GRAPH
-chart = new Chart(document.getElementById("chart"),{
-type:"bar",
-data:{
-labels:["SAFE","MEDIUM","HIGH"],
-datasets:[{
-data:[0,0,0],
-backgroundColor:["#2ea043","#d29922","#f85149"]
-}]
-},
-options:{
-plugins:{legend:{display:false}},
-scales:{y:{beginAtZero:true}}
-}
-});
+/* ---------------- AUTH UI ---------------- */
+function loadAuth(){
 
-// RESULT UI
-function showResult(data){
-
-let cls = "";
-
-if(data.status==="SAFE") cls="result-safe";
-else if(data.status==="MEDIUM RISK") cls="result-medium";
-else cls="result-high";
-
-document.getElementById("resultText").innerHTML = `
-<div class="result-box">
-<h3 class="${cls}">${data.status}</h3>
-<p>Risk Score: ${data.score}/100</p>
-</div>
-`;
-
-}
-
-// ANALYZE URL
-function analyzeURL(){
-
-let url = document.getElementById("url").value;
-
-currentURL = url;
-
-fetch("/api/analyze?url=" + encodeURIComponent(url))
-.then(res=>res.json())
+fetch("/api/auth-status")
+.then(r=>r.json())
 .then(data=>{
 
-showResult(data);
+let box = document.getElementById("authBox");
 
-// update graph
-chart.data.datasets[0].data = [
-data.score < 30 ? 1 : 0,
-data.score >= 30 && data.score < 70 ? 1 : 0,
-data.score >= 70 ? 1 : 0
-];
-
-chart.update();
+if(data.logged_in){
+box.innerHTML = `<a href="/logout">Logout</a>`;
+}else{
+box.innerHTML = `
+<a href="/login">Login</a>
+<a href="/register">Register</a>
+`;
+}
 
 });
 
 }
 
-// LIVE FEED
-function addEvent(){
+loadAuth();
+
+/* ---------------- ANALYZE ---------------- */
+function analyze(){
+
+let url = document.getElementById("url").value;
+currentURL = url;
+
+fetch("/api/analyze?url="+encodeURIComponent(url))
+.then(r=>r.json())
+.then(data=>{
+
+document.getElementById("score").innerText = data.score;
+
+/* badge */
+let badge = document.getElementById("badge");
+
+let cls = "safe-b";
+if(data.status.includes("MEDIUM")) cls="med-b";
+if(data.status.includes("ATTACK")) cls="high-b";
+
+badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
+
+});
+
+}
+
+/* ---------------- LIVE FEED ---------------- */
+function feed(){
 
 if(!currentURL) return;
 
 fetch("/api/live-event")
-.then(res=>res.json())
+.then(r=>r.json())
 .then(data=>{
 
 let div = document.createElement("div");
-div.classList.add("log");
 
-if(data.type==="safe"){
-div.classList.add("safe");
-}else{
-div.classList.add("threat");
-}
+div.className = data.type==="safe" ? "log safe" : "log threat";
 
-div.innerText = `[${data.time}] ${data.message} (${data.url})`;
+div.innerText = `[${data.time}] ${data.message}`;
 
 document.getElementById("feed").prepend(div);
 
@@ -137,7 +280,7 @@ document.getElementById("feed").prepend(div);
 
 }
 
-setInterval(addEvent,1000);
+setInterval(feed,1200);
 
 </script>
 
