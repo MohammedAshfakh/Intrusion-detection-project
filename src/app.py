@@ -4,21 +4,27 @@ import json
 from datetime import datetime
 import joblib
 import re
+import random
+
+# ================= BASE =================
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates"),
-    static_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+    template_folder=os.path.join(BASE_DIR, "templates"),
+    static_folder=os.path.join(BASE_DIR, "static")
 )
 
-app.secret_key = "secure_ai_soc_key"
+app.secret_key = "secure_ai_soc_key_123"
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
 # ================= LOAD MODEL =================
-model = joblib.load(MODEL_PATH)
+try:
+    model = joblib.load(MODEL_PATH)
+except:
+    model = None
 
 # ================= USER SYSTEM =================
 def load_users():
@@ -55,6 +61,18 @@ def dashboard():
     if "user" not in session:
         return redirect("/login")
     return render_template("dashboard.html")
+
+@app.route("/scan")
+def scan():
+    return render_template("scan.html")
+
+@app.route("/analytics")
+def analytics_page():
+    return render_template("analytics.html")
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
 # ================= AUTH =================
 @app.route("/login", methods=["GET", "POST"])
@@ -95,25 +113,29 @@ def logout():
     session.clear()
     return redirect("/")
 
-# ================= ANALYZE =================
+# ================= ML ANALYSIS =================
 @app.route("/api/analyze")
 def analyze():
     url = request.args.get("url", "")
 
-    features = extract_features(url)
+    if model:
+        features = extract_features(url)
 
-    pred = model.predict(features)[0]
+        pred = model.predict(features)[0]
 
-    confidence = 0.5
-    if hasattr(model, "predict_proba"):
-        confidence = max(model.predict_proba(features)[0])
+        confidence = 0.6
+        if hasattr(model, "predict_proba"):
+            confidence = max(model.predict_proba(features)[0])
 
-    if pred == 0:
-        status = "SAFE"
-        score = int((1 - confidence) * 40)
+        if pred == 0:
+            status = "SAFE"
+            score = int((1 - confidence) * 40)
+        else:
+            status = "ATTACK"
+            score = int(confidence * 100)
     else:
-        status = "ATTACK"
-        score = int(confidence * 100)
+        status = "NO MODEL"
+        score = 50
 
     return jsonify({
         "url": url,
@@ -122,25 +144,24 @@ def analyze():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-# ================= LIVE FEED =================
+# ================= LIVE EVENT =================
 @app.route("/api/live-event")
 def live_event():
-    import random
 
-    events_safe = [
-        "DNS request resolved",
-        "HTTPS connection verified",
-        "No anomalies detected"
+    safe_events = [
+        "DNS request resolved successfully",
+        "HTTPS handshake verified",
+        "No anomaly detected"
     ]
 
-    events_threat = [
+    threat_events = [
         "SQL Injection pattern detected",
         "Brute force attempt blocked",
-        "Suspicious redirect found"
+        "Suspicious redirect found",
+        "Malicious payload signature matched"
     ]
 
-    # simple simulated feed
-    msg = random.choice(events_safe + events_threat)
+    msg = random.choice(safe_events + threat_events)
 
     return jsonify({
         "message": msg,
@@ -151,9 +172,16 @@ def live_event():
 @app.route("/api/analytics")
 def analytics():
     return jsonify({
-        "users": len(load_users())
+        "total_hits": random.randint(100, 500),
+        "countries": {
+            "India": random.randint(20, 100),
+            "USA": random.randint(10, 80),
+            "Germany": random.randint(5, 50),
+            "Japan": random.randint(5, 40)
+        }
     })
 
 # ================= RUN =================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
