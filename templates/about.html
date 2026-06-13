@@ -1,37 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>About SOC System</title>
+<title>About - SOC Security System</title>
+
+<link rel="stylesheet" href="/static/style.css">
 
 <style>
 
 body{
 margin:0;
-font-family:Segoe UI;
+font-family:'Segoe UI';
 background:#0b0f19;
 color:#e6edf3;
 }
 
+/* NAV */
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px 18px;
+background:#111827;
+border-bottom:1px solid #1f2937;
+position:sticky;
+top:0;
+z-index:1000;
+}
+
+.navbar a{
+color:#58a6ff;
+text-decoration:none;
+margin-right:12px;
+font-weight:600;
+padding:6px 10px;
+border-radius:6px;
+}
+
+.navbar a:hover{
+background:#238636;
+color:white;
+}
+
+/* ACTIVE PAGE */
+.active{
+background:#58a6ff !important;
+color:white !important;
+}
+
+/* CONTAINER */
 .container{
-width:80%;
+width:85%;
 margin:auto;
-padding:40px;
+padding:20px;
 }
 
 .card{
 background:#111827;
-padding:25px;
+padding:20px;
 border-radius:12px;
 border:1px solid #1f2937;
 margin-top:20px;
 }
 
-h1,h2{
+h2,h3{
 color:#58a6ff;
 }
 
-.url{
-color:#2ea043;
+p{
+line-height:1.6;
+color:#c9d1d9;
+}
+
+.badge{
+display:inline-block;
+padding:5px 10px;
+background:#238636;
+border-radius:6px;
+font-size:12px;
+margin-top:10px;
 }
 
 </style>
@@ -40,70 +86,91 @@ color:#2ea043;
 
 <body>
 
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+  <div>
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/scan">Live Scan</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/about">About</a>
+  </div>
+
+  <div>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<!-- ================= CONTENT ================= -->
 <div class="container">
 
-<h1>🛡 AI Security Operations Center</h1>
+<h2>📘 About This Project</h2>
 
 <div class="card">
 
-<h2>Project Overview</h2>
+<h3>Project Title</h3>
+<p>Machine Learning Based Intrusion Detection System (SOC Web Application)</p>
+
+<h3>Project Description</h3>
+<p>
+This project is a web-based Security Operations Center (SOC) dashboard that uses Machine Learning
+to analyze URL or network-like input patterns and classify them as SAFE or ATTACK based on extracted features.
+</p>
 
 <p>
-This is a <b>Machine Learning based Intrusion Detection System</b> designed to simulate
-real-world SOC (Security Operations Center) monitoring.
+The system provides real-time monitoring, live threat feed simulation, analytics dashboard,
+and continuous scanning visualization using a Flask-based web application.
 </p>
 
+<h3>Developed By</h3>
+<p>Shaik Tasneem</p>
+
+<h3>Academic Details</h3>
 <p>
-It analyzes URLs and generates <b>real-time threat intelligence</b> including:
+Master of Computer Applications (MCA)<br>
+Andhra University<br>
+Academic Year: 2025 – 2026
 </p>
 
-<ul>
-<li>SQL Injection Detection (Simulated)</li>
-<li>XSS Attack Detection (Simulated)</li>
-<li>Brute Force Pattern Monitoring</li>
-<li>Live Traffic Intelligence Feed</li>
-</ul>
+<h3>Project Guide</h3>
+<p>Mohammed Ashfakh</p>
+<p>Web Developer, Cloud & Cybersecurity Engineer</p>
 
-</div>
-
-<div class="card">
-
-<h2>🌐 Live Deployment</h2>
-
-<p>System is currently deployed at:</p>
-
-<p class="url">
-https://intrusion-detection-project-1.onrender.com/
-</p>
-
-</div>
-
-<div class="card">
-
-<h2>⚙ Features</h2>
-
-<ul>
-<li>Real-time URL scanning dashboard</li>
-<li>Fake SOC intelligence feed (simulated attack data)</li>
-<li>Traffic analytics with geographic distribution</li>
-<li>User authentication system</li>
-<li>Live threat scoring engine</li>
-</ul>
-
-</div>
-
-<div class="card">
-
-<h2>🎯 Purpose</h2>
-
+<h3>Technologies Used</h3>
 <p>
-This project is built for academic demonstration of how SOC systems work,
-combining Flask, Machine Learning, and real-time dashboards.
+Python, Flask, HTML, CSS, JavaScript, Chart.js, Scikit-learn, Pandas
 </p>
 
+<h3>Key Features</h3>
+<p>
+✔ URL-based threat detection using ML model<br>
+✔ Live threat feed simulation<br>
+✔ Real-time scanning dashboard<br>
+✔ Analytics with traffic visualization<br>
+✔ User authentication system
+</p>
+
+<h3>License</h3>
+<p>
+This project is developed strictly for academic purposes as part of the MCA final year submission.
+</p>
+
+<span class="badge">SOC Security Project</span>
+
 </div>
 
 </div>
+
+<!-- ================= ACTIVE PAGE SCRIPT ================= -->
+<script>
+const path = window.location.pathname;
+
+document.querySelectorAll(".navbar a").forEach(a => {
+  if(a.getAttribute("href") === path){
+    a.classList.add("active");
+  }
+});
+</script>
 
 </body>
 </html>
