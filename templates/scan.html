@@ -7,18 +7,52 @@
 
 <style>
 
+/* ================= BASE ================= */
 body{
 margin:0;
 font-family:Segoe UI;
 background:#0b0f19;
 color:#e6edf3;
-overflow:hidden;
+overflow-x:hidden;
 }
 
-/* HEADER CARD */
+/* ================= NAV ================= */
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px 18px;
+background:#111827;
+border-bottom:1px solid #1f2937;
+position:sticky;
+top:0;
+z-index:1000;
+}
+
+.navbar a{
+color:#58a6ff;
+text-decoration:none;
+margin-right:12px;
+font-weight:600;
+padding:6px 10px;
+border-radius:6px;
+}
+
+.navbar a:hover{
+background:#238636;
+color:white;
+}
+
+/* ACTIVE PAGE */
+.active{
+background:#58a6ff !important;
+color:white !important;
+}
+
+/* ================= HEADER CARD ================= */
 .card{
 margin:20px auto;
-width:80%;
+width:85%;
 padding:20px;
 background:#111827;
 border-radius:12px;
@@ -27,7 +61,7 @@ text-align:center;
 box-shadow:0 0 20px rgba(88,166,255,0.15);
 }
 
-/* GRID */
+/* ================= GRID ================= */
 .grid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -36,7 +70,7 @@ width:85%;
 margin:auto;
 }
 
-/* BOX */
+/* ================= BOX ================= */
 .box{
 background:#111827;
 padding:20px;
@@ -44,7 +78,7 @@ border-radius:12px;
 border:1px solid #1f2937;
 }
 
-/* LIVE PULSE */
+/* ================= LIVE PULSE ================= */
 .pulse{
 width:10px;
 height:10px;
@@ -58,7 +92,7 @@ animation:blink 1s infinite;
 50%{opacity:0.2;}
 }
 
-/* SCORE */
+/* ================= TEXT ================= */
 .score{
 font-size:40px;
 color:#58a6ff;
@@ -69,12 +103,44 @@ font-size:20px;
 margin-top:10px;
 }
 
+/* ================= EVENT LOG ================= */
+#events{
+height:300px;
+overflow-y:auto;
+border:1px solid #1f2937;
+padding:10px;
+border-radius:8px;
+background:#0b0f19;
+}
+
+#events div{
+padding:6px;
+border-bottom:1px solid #1f2937;
+font-size:13px;
+}
+
 </style>
 
 </head>
 
 <body>
 
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+  <div>
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/scan">Live Scan</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/about">About</a>
+  </div>
+
+  <div>
+    <a href="/logout">Logout</a>
+  </div>
+</nav>
+
+<!-- ================= HEADER ================= -->
 <div class="card">
 <h2>⚡ Live Threat Scanner</h2>
 <p><span class="pulse"></span> Real-time SOC Monitoring Active</p>
@@ -85,6 +151,7 @@ margin-top:10px;
 <h4 id="time"></h4>
 </div>
 
+<!-- ================= GRID ================= -->
 <div class="grid">
 
 <!-- GRAPH -->
@@ -93,10 +160,10 @@ margin-top:10px;
 <canvas id="chart"></canvas>
 </div>
 
-<!-- EVENT LOG -->
+<!-- EVENTS -->
 <div class="box">
 <h3>🔥 Live SOC Events</h3>
-<div id="events" style="height:300px;overflow:auto;"></div>
+<div id="events"></div>
 </div>
 
 </div>
@@ -119,6 +186,7 @@ let chart = new Chart(ctx, {
     },
     options: {
         responsive: true,
+        animation: false,
         scales: {
             y: {
                 min: 0,
@@ -128,33 +196,34 @@ let chart = new Chart(ctx, {
     }
 });
 
+/* ================= EVENT ================= */
 function addEvent(msg){
+    if(!msg) return;
+
     let div = document.createElement("div");
     div.innerHTML = "🛡 " + msg;
-    div.style.padding = "5px";
-    div.style.borderBottom = "1px solid #1f2937";
     document.getElementById("events").prepend(div);
 }
 
+/* ================= SCAN ================= */
 function scan(){
 
 fetch("/api/continuous-scan")
 .then(r => r.json())
 .then(data => {
 
-    // UI update
-    document.getElementById("url").innerText = "URL: " + data.url;
-    document.getElementById("status").innerText = "STATUS: " + data.status;
-    document.getElementById("score").innerText = data.score;
-    document.getElementById("time").innerText = data.time;
+    data = data || {};
 
-    // GRAPH update
+    document.getElementById("url").innerText = "URL: " + (data.url || "-");
+    document.getElementById("status").innerText = "STATUS: " + (data.status || "-");
+    document.getElementById("score").innerText = data.score || 0;
+    document.getElementById("time").innerText = data.time || "";
+
     let time = new Date().toLocaleTimeString();
 
     chart.data.labels.push(time);
-    chart.data.datasets[0].data.push(data.score);
+    chart.data.datasets[0].data.push(data.score || 0);
 
-    // keep last 15 points only
     if(chart.data.labels.length > 15){
         chart.data.labels.shift();
         chart.data.datasets[0].data.shift();
@@ -162,8 +231,7 @@ fetch("/api/continuous-scan")
 
     chart.update();
 
-    // EVENT LOG
-    addEvent(data.event);
+    addEvent(data.event || "Live scan update received");
 
 });
 
@@ -172,6 +240,17 @@ fetch("/api/continuous-scan")
 setInterval(scan, 1500);
 scan();
 
+</script>
+
+<!-- ACTIVE PAGE HIGHLIGHT -->
+<script>
+const path = window.location.pathname;
+
+document.querySelectorAll(".navbar a").forEach(a => {
+    if(a.getAttribute("href") === path){
+        a.classList.add("active");
+    }
+});
 </script>
 
 </body>
