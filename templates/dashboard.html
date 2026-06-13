@@ -19,6 +19,7 @@ nav{
 padding:15px;
 text-align:center;
 background:#161b22;
+border-bottom:1px solid #30363d;
 }
 
 nav a{
@@ -34,25 +35,30 @@ margin:auto;
 padding:20px;
 }
 
+/* INPUT CARD */
+.card{
+background:#161b22;
+padding:20px;
+border-radius:12px;
+border:1px solid #30363d;
+margin-bottom:20px;
+}
+
+/* GRID */
 .grid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:20px;
 }
 
-.card{
-background:#161b22;
-padding:20px;
-border-radius:12px;
-box-shadow:0 0 15px rgba(0,0,0,0.4);
-}
-
+/* INPUT */
 input{
-width:80%;
+width:75%;
 padding:10px;
-border:none;
 border-radius:6px;
-margin-right:10px;
+border:1px solid #30363d;
+background:#0d1117;
+color:white;
 }
 
 button{
@@ -61,11 +67,31 @@ border:none;
 border-radius:6px;
 background:#238636;
 color:white;
+font-weight:bold;
 cursor:pointer;
 }
 
+button:hover{
+background:#2ea043;
+}
+
+/* RESULT */
+.result-box{
+margin-top:15px;
+padding:15px;
+border-radius:10px;
+background:#0d1117;
+border:1px solid #30363d;
+text-align:center;
+}
+
+.result-safe{color:#2ea043;font-weight:bold;}
+.result-medium{color:#d29922;font-weight:bold;}
+.result-high{color:#f85149;font-weight:bold;}
+
+/* FEED */
 .feed{
-height:300px;
+height:320px;
 overflow:auto;
 background:#0d1117;
 padding:10px;
@@ -76,27 +102,17 @@ border:1px solid #30363d;
 .log{
 padding:6px;
 margin:5px 0;
+border-radius:6px;
 font-size:13px;
-border-radius:5px;
 }
 
-.safe{background:#033a16;}
-.threat{background:#5a1e1e;}
+.safe{background:#033a16;border-left:4px solid #2ea043;}
+.threat{background:#5a1e1e;border-left:4px solid #f85149;}
 
-.badge{
-padding:10px;
-border-radius:8px;
-display:inline-block;
-font-weight:bold;
-}
-
-.safe-badge{background:#238636;}
-.medium-badge{background:#9e6a03;}
-.high-badge{background:#da3633;}
-
+/* CHART */
 canvas{
 width:100% !important;
-height:250px !important;
+height:300px !important;
 }
 
 </style>
@@ -123,7 +139,7 @@ height:250px !important;
 <input id="url" placeholder="Enter website URL (https://example.com)">
 <button onclick="analyzeURL()">Analyze</button>
 
-<p id="resultText"></p>
+<div id="resultText"></div>
 
 </div>
 
@@ -136,15 +152,10 @@ height:250px !important;
 <div id="feed" class="feed"></div>
 </div>
 
-<!-- THREAT SCORE -->
+<!-- CHART -->
 <div class="card">
-<h3>📊 Threat Score</h3>
-
-<h1 id="score">--</h1>
-<div id="status" class="badge">Waiting...</div>
-
+<h3>📊 Risk Distribution</h3>
 <canvas id="chart"></canvas>
-
 </div>
 
 </div>
@@ -153,28 +164,57 @@ height:250px !important;
 
 <script>
 
-let chartData = [50,55,52,60,58];
+let chart;
 
-let chart = new Chart(document.getElementById("chart"),{
-type:"line",
+// INIT CHART (BAR)
+function initChart(){
+
+chart = new Chart(document.getElementById("chart"),{
+type:"bar",
 data:{
-labels:["","","","",""],
+labels:["SAFE","MEDIUM","HIGH"],
 datasets:[{
-data:chartData,
-borderColor:"#58a6ff",
-tension:0.4,
-pointRadius:0
+data:[0,0,0],
+backgroundColor:["#2ea043","#d29922","#f85149"]
 }]
 },
 options:{
 plugins:{legend:{display:false}},
-scales:{x:{display:false},y:{display:false}}
+scales:{
+y:{beginAtZero:true}
+}
 }
 });
 
-// ===============================
+}
+
+initChart();
+
+
+// ==========================
+// SHOW RESULT
+// ==========================
+
+function showResult(data){
+
+let cls = "";
+
+if(data.status === "SAFE") cls = "result-safe";
+else if(data.status === "MEDIUM RISK") cls = "result-medium";
+else cls = "result-high";
+
+document.getElementById("resultText").innerHTML = `
+<div class="result-box">
+<h3 class="${cls}">${data.status}</h3>
+<p>Risk Score: ${data.score}/100</p>
+</div>
+`;
+
+}
+
+// ==========================
 // ANALYZE URL
-// ===============================
+// ==========================
 
 function analyzeURL(){
 
@@ -184,33 +224,26 @@ fetch("/api/analyze?url=" + encodeURIComponent(url))
 .then(res => res.json())
 .then(data => {
 
-document.getElementById("score").innerText = data.score;
-document.getElementById("resultText").innerText =
-"Result: " + data.status;
+showResult(data);
 
-// badge color
-let badge = document.getElementById("status");
+// reset chart
+let safe=0,med=0,high=0;
 
-badge.className = "badge";
+if(data.status==="SAFE") safe=1;
+else if(data.status==="MEDIUM RISK") med=1;
+else high=1;
 
-if(data.status == "SAFE"){
-badge.classList.add("safe-badge");
-}
-else if(data.status == "MEDIUM RISK"){
-badge.classList.add("medium-badge");
-}
-else{
-badge.classList.add("high-badge");
-}
-
-badge.innerText = data.status;
+chart.data.datasets[0].data=[safe,med,high];
+chart.update();
 
 });
+
 }
 
-// ===============================
-// LIVE FEED (every 1 sec)
-// ===============================
+
+// ==========================
+// LIVE FEED
+// ==========================
 
 function addEvent(){
 
@@ -221,7 +254,7 @@ fetch("/api/live-event")
 let div = document.createElement("div");
 div.classList.add("log");
 
-if(data.type === "safe"){
+if(data.type==="safe"){
 div.classList.add("safe");
 div.innerText = "🟢 " + data.time + " - " + data.message;
 }else{
@@ -230,12 +263,6 @@ div.innerText = "🔴 " + data.time + " - " + data.message;
 }
 
 document.getElementById("feed").prepend(div);
-
-// update chart randomly
-chartData.shift();
-chartData.push(chartData[chartData.length-1] + (Math.random()-0.5)*5);
-
-chart.update();
 
 });
 
