@@ -6,7 +6,7 @@ import random
 import joblib
 import re
 
-# OPTIONAL IMPORT (SAFE FALLBACK)
+# Optional PDF support (safe fallback)
 try:
     from reportlab.pdfgen import canvas
     REPORTLAB_AVAILABLE = True
@@ -14,6 +14,7 @@ except:
     REPORTLAB_AVAILABLE = False
 
 
+# ================= BASE SETUP =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -22,23 +23,25 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 
-app.secret_key = "secret123"
+app.secret_key = "super_secret_key_123"
 
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
-# ================= LOAD MODEL =================
+
+# ================= LOAD ML MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
 except:
     model = None
 
-# ================= STATE =================
+
+# ================= GLOBAL STATE =================
 CURRENT_URL = ""
 CURRENT_RISK = {"status": "SAFE", "score": 0}
 
 
-# ================= USERS =================
+# ================= USER SYSTEM =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
@@ -50,7 +53,7 @@ def save_users(users):
         json.dump(users, f, indent=4)
 
 
-# ================= PAGES =================
+# ================= ROUTES =================
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -69,7 +72,7 @@ def about():
 
 
 # ================= AUTH =================
-@app.route('/login', methods=['GET','POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get("email")
@@ -82,12 +85,12 @@ def login():
                 session["user"] = email
                 return redirect("/dashboard")
 
-        return "Invalid login"
+        return "❌ Invalid Credentials"
 
     return render_template("login.html")
 
 
-@app.route('/register', methods=['GET','POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         name = request.form.get("name")
@@ -98,9 +101,14 @@ def register():
 
         for u in users:
             if u["email"] == email:
-                return "User already exists"
+                return "⚠️ User already exists"
 
-        users.append({"name": name, "email": email, "password": password})
+        users.append({
+            "name": name,
+            "email": email,
+            "password": password
+        })
+
         save_users(users)
 
         return redirect("/login")
@@ -112,6 +120,14 @@ def register():
 def logout():
     session.clear()
     return redirect("/login")
+
+
+# ================= AUTH STATUS (FOR UI) =================
+@app.route("/api/auth-status")
+def auth_status():
+    if "user" in session:
+        return jsonify({"logged_in": True})
+    return jsonify({"logged_in": False})
 
 
 # ================= FEATURE ENGINEERING =================
@@ -126,7 +142,7 @@ def extract_features(url):
     ]]
 
 
-# ================= ANALYZE =================
+# ================= URL ANALYSIS (ML) =================
 @app.route("/api/analyze")
 def analyze():
 
@@ -141,13 +157,15 @@ def analyze():
 
             if pred == 0:
                 status = "SAFE"
-                score = 20
+                score = random.randint(5, 25)
             else:
                 status = "ATTACK"
-                score = 85
+                score = random.randint(70, 95)
+
         except:
             status = "SAFE"
             score = 10
+
     else:
         status = "MEDIUM RISK"
         score = 50
@@ -157,7 +175,7 @@ def analyze():
     return jsonify(CURRENT_RISK)
 
 
-# ================= LIVE FEED =================
+# ================= LIVE SOC FEED =================
 @app.route("/api/live-event")
 def live_event():
 
@@ -166,15 +184,16 @@ def live_event():
 
     safe_events = [
         "DNS Resolution Successful",
-        "Secure HTTPS Connection",
-        "Firewall Operational"
+        "HTTPS Secure Channel Verified",
+        "Firewall Operating Normally",
+        "No Suspicious Activity Found"
     ]
 
     attack_events = [
-        "SQL Injection Attempt Detected",
-        "Brute Force Attack Pattern",
-        "Malicious URL Detected",
-        "Suspicious Redirect Found"
+        "SQL Injection Pattern Detected",
+        "Brute Force Attempt Blocked",
+        "Malicious URL Signature Found",
+        "Suspicious Redirect Behavior"
     ]
 
     if status == "SAFE":
@@ -193,7 +212,7 @@ def live_event():
     })
 
 
-# ================= REPORT =================
+# ================= PDF REPORT =================
 @app.route("/api/report")
 def report():
 
@@ -204,10 +223,15 @@ def report():
 
     c = canvas.Canvas(file_path)
 
-    c.drawString(100, 750, "AI Security SOC Report")
-    c.drawString(100, 730, f"URL: {CURRENT_URL}")
-    c.drawString(100, 710, f"Status: {CURRENT_RISK['status']}")
-    c.drawString(100, 690, f"Score: {CURRENT_RISK['score']}")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(100, 750, "AI SOC Security Report")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(100, 720, f"URL: {CURRENT_URL}")
+    c.drawString(100, 700, f"Status: {CURRENT_RISK['status']}")
+    c.drawString(100, 680, f"Score: {CURRENT_RISK['score']}/100")
+
+    c.drawString(100, 640, "Generated by AI Security Monitoring System")
 
     c.save()
 
