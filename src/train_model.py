@@ -1,55 +1,30 @@
 import pandas as pd
-import os
 import joblib
-
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
-print("📊 Loading dataset...")
+DATA_PATH = "../dataset/data.csv"
 
-# ---------------- BASE PATH ----------------
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-dataset_path = os.path.join(BASE_DIR, "dataset", "dataset.csv")
+df = pd.read_csv(DATA_PATH)
 
-# ---------------- LOAD DATA ----------------
-data = pd.read_csv(dataset_path)
+# assuming last column is label
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
 
-print("✅ Dataset loaded")
-
-# ---------------- PREPROCESS ----------------
-# last column = label
-X = data.iloc[:, :-1]
-y = data.iloc[:, -1]
-
-# convert label
-y = y.apply(lambda x: 0 if x == 'normal' else 1)
-
-# ---------------- SPLIT ----------------
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# ---------------- TRAIN ----------------
-print("🧠 Training model...")
+model = RandomForestClassifier(
+    n_estimators=200,
+    max_depth=None,
+    random_state=42
+)
 
-model = RandomForestClassifier(n_estimators=100)
 model.fit(X_train, y_train)
 
-# ---------------- EVALUATE ----------------
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
+print(classification_report(y_test, model.predict(X_test)))
 
-print(f"📈 Accuracy: {accuracy:.2f}")
-
-# ---------------- SAVE MODEL ----------------
-model_dir = os.path.join(BASE_DIR, "model")
-
-# create folder if not exists
-os.makedirs(model_dir, exist_ok=True)
-
-model_path = os.path.join(model_dir, "model.pkl")
-
-joblib.dump(model, model_path)
-
-print(f"💾 Model saved at: {model_path}")
+joblib.dump(model, "../model/model.pkl")
+print("Model saved")

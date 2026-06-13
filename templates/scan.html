@@ -1,53 +1,77 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Live Threat Scanner</title>
-
-<link rel="stylesheet" href="/static/style.css">
-
-</head>
-
 <body>
 
 <nav>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
 <a href="/scan">Live Scan</a>
+<a href="/analytics">Analytics</a>
 </nav>
 
 <div class="card">
 
-<h2>⚡ Live URL Threat Scanner</h2>
-
-<p>Scanning every 2 seconds...</p>
+<h2>⚡ Live Threat Detection (Real-Time Graph)</h2>
 
 <h3 id="url">URL: -</h3>
 <h2 id="status">STATUS: -</h2>
 <h3 id="score">SCORE: -</h3>
-<h4 id="time"></h4>
+
+<canvas id="chart" width="400" height="150"></canvas>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+
+let labels = [];
+let data = [];
+
+let ctx = document.getElementById("chart").getContext("2d");
+
+let chart = new Chart(ctx, {
+type: "line",
+data: {
+labels: labels,
+datasets: [{
+label: "Threat Score/sec",
+data: data,
+borderColor: "red",
+fill: false
+}]
+},
+options: {
+animation: false
+}
+});
 
 function scan(){
 
 fetch("/api/continuous-scan")
 .then(r=>r.json())
-.then(data=>{
+.then(d=>{
 
-document.getElementById("url").innerText = "URL: " + data.url;
-document.getElementById("status").innerText = "STATUS: " + data.status;
-document.getElementById("score").innerText = "SCORE: " + data.score;
-document.getElementById("time").innerText = data.time;
+document.getElementById("url").innerText = "URL: " + d.url;
+document.getElementById("status").innerText = "STATUS: " + d.status;
+document.getElementById("score").innerText = "SCORE: " + d.score;
+
+let time = new Date().toLocaleTimeString();
+
+labels.push(time);
+data.push(d.score);
+
+if(labels.length > 20){
+labels.shift();
+data.shift();
+}
+
+chart.update();
 
 });
 
 }
 
-setInterval(scan,2000);
+setInterval(scan, 1000);
 
 </script>
 
 </body>
-</html>

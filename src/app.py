@@ -2,146 +2,32 @@ from flask import Flask, render_template, request, redirect, jsonify, session
 import os
 import json
 from datetime import datetime
-import random
 import joblib
 import re
 
-# Optional report support
-try:
-    from reportlab.pdfgen import canvas
-    REPORTLAB_AVAILABLE = True
-except:
-    REPORTLAB_AVAILABLE = False
-
-
-# ================= BASE =================
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
 app = Flask(
     __name__,
-    template_folder=os.path.join(BASE_DIR, "templates"),
-    static_folder=os.path.join(BASE_DIR, "static")
+    template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates"),
+    static_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 )
 
-app.secret_key = "soc_ai_secret_key_123"
+app.secret_key = "secure_ai_soc_key"
 
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
 
+# ================= LOAD MODEL =================
+model = joblib.load(MODEL_PATH)
 
-# ================= ML MODEL =================
-try:
-    model = joblib.load(MODEL_PATH)
-except:
-    model = None
-
-
-# ================= GLOBAL STATE =================
-CURRENT_URL = ""
-CURRENT_RISK = {"status": "SAFE", "score": 0}
-
-VISITOR_STATS = {
-    "total_hits": 0,
-    "countries": {}
-}
-
-
-# ================= USER STORAGE =================
+# ================= USER SYSTEM =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
+    return json.load(open(USERS_FILE))
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
-
-
-# ================= ROUTES =================
-@app.route('/')
-def home():
-    return render_template("index.html")
-
-
-@app.route('/dashboard')
-def dashboard():
-    if "user" not in session:
-        return redirect("/login")
-    return render_template("dashboard.html")
-
-
-@app.route('/about')
-def about():
-    return render_template("about.html")
-
-
-@app.route('/analytics')
-def analytics_page():
-    return render_template("analytics.html")
-
-
-@app.route('/scan')
-def scan_page():
-    return render_template("scan.html")
-
-
-# ================= AUTH =================
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        users = load_users()
-
-        for u in users:
-            if u["email"] == email and u["password"] == password:
-                session["user"] = email
-                return redirect("/dashboard")
-
-        return "❌ Invalid Credentials"
-
-    return render_template("login.html")
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        name = request.form.get("name")
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        users = load_users()
-
-        for u in users:
-            if u["email"] == email:
-                return "⚠️ User already exists"
-
-        users.append({
-            "name": name,
-            "email": email,
-            "password": password
-        })
-
-        save_users(users)
-
-        return redirect("/login")
-
-    return render_template("register.html")
-
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect("/login")
-
-
-# ================= AUTH STATUS =================
-@app.route("/api/auth-status")
-def auth_status():
-    return jsonify({"logged_in": "user" in session})
-
+    json.dump(users, open(USERS_FILE, "w"), indent=4)
 
 # ================= FEATURE ENGINEERING =================
 def extract_features(url):
@@ -150,107 +36,84 @@ def extract_features(url):
         url.count("."),
         url.count("-"),
         url.count("@"),
+        url.count("?"),
+        url.count("&"),
+        url.count("="),
         1 if "https" in url else 0,
+        1 if "login" in url.lower() else 0,
+        int(any(c.isdigit() for c in url)),
         len(re.findall(r"\d", url))
     ]]
 
+# ================= ROUTES =================
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-# ================= ANALYZE URL =================
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect("/login")
+    return render_template("dashboard.html")
+
+# ================= AUTH =================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        users = load_users()
+
+        for u in users:
+            if u["email"] == email and u["password"] == password:
+                session["user"] = email
+                return redirect("/dashboard")
+
+        return "Invalid login"
+
+    return render_template("login.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        users = load_users()
+
+        users.append({
+            "name": request.form["name"],
+            "email": request.form["email"],
+            "password": request.form["password"]
+        })
+
+        save_users(users)
+        return redirect("/login")
+
+    return render_template("register.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
+# ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
-
-    global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
-
     url = request.args.get("url", "")
-    CURRENT_URL = url
 
-    # ---- visitor tracking ----
-    VISITOR_STATS["total_hits"] += 1
-    country = random.choice(["India", "USA", "UK", "Germany", "Japan", "Canada"])
+    features = extract_features(url)
 
-    if country in VISITOR_STATS["countries"]:
-        VISITOR_STATS["countries"][country] += 1
-    else:
-        VISITOR_STATS["countries"][country] = 1
+    pred = model.predict(features)[0]
 
-    # ---- ML prediction ----
-    if model:
-        try:
-            pred = model.predict(extract_features(url))[0]
+    confidence = 0.5
+    if hasattr(model, "predict_proba"):
+        confidence = max(model.predict_proba(features)[0])
 
-            if pred == 0:
-                status = "SAFE"
-                score = random.randint(5, 25)
-            else:
-                status = "ATTACK"
-                score = random.randint(70, 95)
-
-        except:
-            status = "SAFE"
-            score = 10
-    else:
-        status = "MEDIUM RISK"
-        score = 50
-
-    CURRENT_RISK = {"status": status, "score": score}
-
-    return jsonify(CURRENT_RISK)
-
-
-# ================= LIVE SOC FEED =================
-@app.route("/api/live-event")
-def live_event():
-
-    status = CURRENT_RISK["status"]
-    score = CURRENT_RISK["score"]
-
-    safe_events = [
-        "DNS Resolution Successful",
-        "HTTPS Secure Connection Verified",
-        "Firewall Operating Normally",
-        "No Suspicious Activity Found"
-    ]
-
-    threat_events = [
-        "SQL Injection Pattern Detected",
-        "Brute Force Attack Blocked",
-        "Malicious URL Signature Found",
-        "Suspicious Redirect Behavior"
-    ]
-
-    if status == "SAFE":
-        msg = random.choice(safe_events)
-        t = "safe"
-    else:
-        msg = random.choice(threat_events)
-        t = "threat"
-
-    return jsonify({
-        "type": t,
-        "message": msg,
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "url": CURRENT_URL,
-        "score": score
-    })
-
-
-# ================= CONTINUOUS SCAN =================
-@app.route("/api/continuous-scan")
-def continuous_scan():
-
-    url = CURRENT_URL
-
-    if not url:
-        return jsonify({"status": "NO DATA", "score": 0})
-
-    score = random.randint(10, 95)
-
-    if score < 30:
+    if pred == 0:
         status = "SAFE"
-    elif score < 70:
-        status = "MEDIUM"
+        score = int((1 - confidence) * 40)
     else:
         status = "ATTACK"
+        score = int(confidence * 100)
 
     return jsonify({
         "url": url,
@@ -259,35 +122,38 @@ def continuous_scan():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
+# ================= LIVE FEED =================
+@app.route("/api/live-event")
+def live_event():
+    import random
+
+    events_safe = [
+        "DNS request resolved",
+        "HTTPS connection verified",
+        "No anomalies detected"
+    ]
+
+    events_threat = [
+        "SQL Injection pattern detected",
+        "Brute force attempt blocked",
+        "Suspicious redirect found"
+    ]
+
+    # simple simulated feed
+    msg = random.choice(events_safe + events_threat)
+
+    return jsonify({
+        "message": msg,
+        "time": datetime.now().strftime("%H:%M:%S")
+    })
 
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics():
-    return jsonify(VISITOR_STATS)
-
-
-# ================= PDF REPORT =================
-@app.route("/api/report")
-def report():
-
-    if not REPORTLAB_AVAILABLE:
-        return jsonify({"error": "reportlab not installed"})
-
-    file_path = os.path.join(BASE_DIR, "static", "report.pdf")
-
-    c = canvas.Canvas(file_path)
-
-    c.drawString(100, 750, "AI SOC Security Report")
-    c.drawString(100, 730, f"URL: {CURRENT_URL}")
-    c.drawString(100, 710, f"Status: {CURRENT_RISK['status']}")
-    c.drawString(100, 690, f"Score: {CURRENT_RISK['score']}")
-
-    c.save()
-
-    return jsonify({"report_url": "/static/report.pdf"})
-
+    return jsonify({
+        "users": len(load_users())
+    })
 
 # ================= RUN =================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=5000, debug=True)
