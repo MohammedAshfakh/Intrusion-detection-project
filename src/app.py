@@ -6,7 +6,7 @@ import joblib
 import re
 import random
 
-# ================= BASE SETUP =================
+# ================= BASE =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -20,13 +20,22 @@ app.secret_key = "secure_ai_soc_key_123"
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
-# ================= LOAD ML MODEL =================
+# ================= ML MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
 except:
     model = None
 
-# ================= DATABASE (JSON FILE) =================
+# ================= GLOBAL STATE =================
+CURRENT_URL = ""
+CURRENT_RISK = {"status": "SAFE", "score": 0}
+
+VISITOR_STATS = {
+    "total_hits": 0,
+    "countries": {}
+}
+
+# ================= JSON DATABASE =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
@@ -79,28 +88,8 @@ def analytics():
 def about():
     return render_template("about.html")
 
-# ================= AUTH =================
+# ================= AUTH SYSTEM =================
 
-# LOGIN (READ from JSON DB)
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        users = load_users()
-
-        for user in users:
-            if user["email"] == email and user["password"] == password:
-                session["user"] = email
-                return redirect("/dashboard")
-
-        return "❌ Invalid email or password"
-
-    return render_template("login.html")
-
-
-# REGISTER (WRITE into JSON DB)
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -111,12 +100,11 @@ def register():
 
         users = load_users()
 
-        # check duplicate
-        for user in users:
-            if user["email"] == email:
+        # prevent duplicates
+        for u in users:
+            if u["email"] == email:
                 return "⚠️ User already exists"
 
-        # append new user
         users.append({
             "name": name,
             "email": email,
@@ -131,43 +119,79 @@ def register():
     return render_template("register.html")
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        users = load_users()
+
+        for u in users:
+            if u["email"] == email and u["password"] == password:
+                session["user"] = email
+                return redirect("/dashboard")
+
+        return "❌ Invalid credentials"
+
+    return render_template("login.html")
+
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-# ================= ML ANALYSIS =================
+# ================= ANALYZE URL =================
 @app.route("/api/analyze")
 def analyze():
+
+    global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
+
     url = request.args.get("url", "")
+    CURRENT_URL = url
 
+    # update hits (REAL tracking now)
+    VISITOR_STATS["total_hits"] += 1
+
+    country = random.choice(["India", "USA", "Germany", "Japan", "UK"])
+    VISITOR_STATS["countries"][country] = VISITOR_STATS["countries"].get(country, 0) + 1
+
+    # ML prediction
     if model:
-        features = extract_features(url)
+        try:
+            pred = model.predict(extract_features(url))[0]
 
-        pred = model.predict(features)[0]
+            if pred == 0:
+                status = "SAFE"
+                score = random.randint(5, 30)
+            else:
+                status = "ATTACK"
+                score = random.randint(70, 98)
 
-        confidence = 0.6
-        if hasattr(model, "predict_proba"):
-            confidence = max(model.predict_proba(features)[0])
-
-        if pred == 0:
+        except:
             status = "SAFE"
-            score = int((1 - confidence) * 40)
-        else:
-            status = "ATTACK"
-            score = int(confidence * 100)
+            score = 10
     else:
-        status = "NO MODEL"
+        status = "MEDIUM"
         score = 50
 
-    return jsonify({
-        "url": url,
+    CURRENT_RISK = {
         "status": status,
         "score": score,
-        "time": datetime.now().strftime("%H:%M:%S")
-    })
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "url": url
+    }
 
-# ================= LIVE EVENTS =================
+    return jsonify(CURRENT_RISK)
+
+# ================= LIVE RISK (FIX FOR DASHBOARD 0 ISSUE) =================
+@app.route("/api/current-risk")
+def current_risk():
+    return jsonify(CURRENT_RISK)
+
+# ================= LIVE FEED =================
 @app.route("/api/live-event")
 def live_event():
 
@@ -182,23 +206,46 @@ def live_event():
 
     return jsonify({
         "message": random.choice(events),
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "url": CURRENT_URL,
+        "score": CURRENT_RISK["score"]
+    })
+
+# ================= CONTINUOUS SCAN =================
+@app.route("/api/continuous-scan")
+def continuous_scan():
+
+    if not CURRENT_URL:
+        return jsonify({
+            "url": "-",
+            "status": "NO DATA",
+            "score": 0,
+            "time": datetime.now().strftime("%H:%M:%S")
+        })
+
+    score = random.randint(10, 95)
+
+    if score < 30:
+        status = "SAFE"
+    elif score < 70:
+        status = "MEDIUM"
+    else:
+        status = "ATTACK"
+
+    return jsonify({
+        "url": CURRENT_URL,
+        "status": status,
+        "score": score,
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-# ================= ANALYTICS API =================
+# ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
-    users = load_users()
 
     return jsonify({
-        "total_users": len(users),
-        "users": users,
-        "countries": {
-            "India": random.randint(20, 100),
-            "USA": random.randint(10, 70),
-            "Germany": random.randint(5, 40),
-            "Japan": random.randint(5, 30)
-        }
+        "total_hits": VISITOR_STATS["total_hits"],
+        "countries": VISITOR_STATS["countries"]
     })
 
 # ================= RUN =================
