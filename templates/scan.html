@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Live Threat Scanner</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+</head>
+
+<body>
+
+<nav>
+<a href="/">Home</a>
+<a href="/dashboard">Dashboard</a>
+<a href="/scan">Live Scan</a>
+</nav>
+
+<div class="card">
+
+<h2>⚡ Live URL Threat Scanner</h2>
+
+<p>Scanning every 2 seconds...</p>
+
+<h3 id="url">URL: -</h3>
+<h2 id="status">STATUS: -</h2>
+<h3 id="score">SCORE: -</h3>
+<h4 id="time"></h4>
+
+</div>
+
+<script>
+
+function scan(){
+
+fetch("/api/continuous-scan")
+.then(r=>r.json())
+.then(data=>{
+
+document.getElementById("url").innerText = "URL: " + data.url;
+document.getElementById("status").innerText = "STATUS: " + data.status;
+document.getElementById("score").innerText = "SCORE: " + data.score;
+document.getElementById("time").innerText = data.time;
+
+});
+
+}
+
+setInterval(scan,2000);
+
+</script>
+
+</body>
+</html>

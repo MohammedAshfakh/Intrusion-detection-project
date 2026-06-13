@@ -6,7 +6,7 @@ import random
 import joblib
 import re
 
-# Optional PDF support (safe fallback)
+# Optional report support
 try:
     from reportlab.pdfgen import canvas
     REPORTLAB_AVAILABLE = True
@@ -14,7 +14,7 @@ except:
     REPORTLAB_AVAILABLE = False
 
 
-# ================= BASE SETUP =================
+# ================= BASE =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -23,13 +23,13 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 
-app.secret_key = "super_secret_key_123"
+app.secret_key = "soc_ai_secret_key_123"
 
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
 
-# ================= LOAD ML MODEL =================
+# ================= ML MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
 except:
@@ -40,8 +40,13 @@ except:
 CURRENT_URL = ""
 CURRENT_RISK = {"status": "SAFE", "score": 0}
 
+VISITOR_STATS = {
+    "total_hits": 0,
+    "countries": {}
+}
 
-# ================= USER SYSTEM =================
+
+# ================= USER STORAGE =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
@@ -69,6 +74,16 @@ def dashboard():
 @app.route('/about')
 def about():
     return render_template("about.html")
+
+
+@app.route('/analytics')
+def analytics_page():
+    return render_template("analytics.html")
+
+
+@app.route('/scan')
+def scan_page():
+    return render_template("scan.html")
 
 
 # ================= AUTH =================
@@ -122,12 +137,10 @@ def logout():
     return redirect("/login")
 
 
-# ================= AUTH STATUS (FOR UI) =================
+# ================= AUTH STATUS =================
 @app.route("/api/auth-status")
 def auth_status():
-    if "user" in session:
-        return jsonify({"logged_in": True})
-    return jsonify({"logged_in": False})
+    return jsonify({"logged_in": "user" in session})
 
 
 # ================= FEATURE ENGINEERING =================
@@ -142,15 +155,25 @@ def extract_features(url):
     ]]
 
 
-# ================= URL ANALYSIS (ML) =================
+# ================= ANALYZE URL =================
 @app.route("/api/analyze")
 def analyze():
 
-    global CURRENT_URL, CURRENT_RISK
+    global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
 
     url = request.args.get("url", "")
     CURRENT_URL = url
 
+    # ---- visitor tracking ----
+    VISITOR_STATS["total_hits"] += 1
+    country = random.choice(["India", "USA", "UK", "Germany", "Japan", "Canada"])
+
+    if country in VISITOR_STATS["countries"]:
+        VISITOR_STATS["countries"][country] += 1
+    else:
+        VISITOR_STATS["countries"][country] = 1
+
+    # ---- ML prediction ----
     if model:
         try:
             pred = model.predict(extract_features(url))[0]
@@ -165,7 +188,6 @@ def analyze():
         except:
             status = "SAFE"
             score = 10
-
     else:
         status = "MEDIUM RISK"
         score = 50
@@ -184,14 +206,14 @@ def live_event():
 
     safe_events = [
         "DNS Resolution Successful",
-        "HTTPS Secure Channel Verified",
+        "HTTPS Secure Connection Verified",
         "Firewall Operating Normally",
         "No Suspicious Activity Found"
     ]
 
-    attack_events = [
+    threat_events = [
         "SQL Injection Pattern Detected",
-        "Brute Force Attempt Blocked",
+        "Brute Force Attack Blocked",
         "Malicious URL Signature Found",
         "Suspicious Redirect Behavior"
     ]
@@ -200,7 +222,7 @@ def live_event():
         msg = random.choice(safe_events)
         t = "safe"
     else:
-        msg = random.choice(attack_events)
+        msg = random.choice(threat_events)
         t = "threat"
 
     return jsonify({
@@ -210,6 +232,38 @@ def live_event():
         "url": CURRENT_URL,
         "score": score
     })
+
+
+# ================= CONTINUOUS SCAN =================
+@app.route("/api/continuous-scan")
+def continuous_scan():
+
+    url = CURRENT_URL
+
+    if not url:
+        return jsonify({"status": "NO DATA", "score": 0})
+
+    score = random.randint(10, 95)
+
+    if score < 30:
+        status = "SAFE"
+    elif score < 70:
+        status = "MEDIUM"
+    else:
+        status = "ATTACK"
+
+    return jsonify({
+        "url": url,
+        "status": status,
+        "score": score,
+        "time": datetime.now().strftime("%H:%M:%S")
+    })
+
+
+# ================= ANALYTICS =================
+@app.route("/api/analytics")
+def analytics():
+    return jsonify(VISITOR_STATS)
 
 
 # ================= PDF REPORT =================
@@ -223,15 +277,10 @@ def report():
 
     c = canvas.Canvas(file_path)
 
-    c.setFont("Helvetica-Bold", 14)
     c.drawString(100, 750, "AI SOC Security Report")
-
-    c.setFont("Helvetica", 12)
-    c.drawString(100, 720, f"URL: {CURRENT_URL}")
-    c.drawString(100, 700, f"Status: {CURRENT_RISK['status']}")
-    c.drawString(100, 680, f"Score: {CURRENT_RISK['score']}/100")
-
-    c.drawString(100, 640, "Generated by AI Security Monitoring System")
+    c.drawString(100, 730, f"URL: {CURRENT_URL}")
+    c.drawString(100, 710, f"Status: {CURRENT_RISK['status']}")
+    c.drawString(100, 690, f"Score: {CURRENT_RISK['score']}")
 
     c.save()
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Traffic Analytics</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<style>
+body{
+background:#0b0f19;
+color:white;
+font-family:Arial;
+}
+
+.card{
+background:#111827;
+padding:20px;
+margin:20px;
+border-radius:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<nav>
+<a href="/">Home</a>
+<a href="/dashboard">Dashboard</a>
+<a href="/analytics">Analytics</a>
+</nav>
+
+<div class="card">
+
+<h2>🌍 Global Traffic Analytics</h2>
+
+<h3>Total Visits: <span id="hits">0</span></h3>
+
+<div id="countries"></div>
+
+</div>
+
+<script>
+
+function load(){
+
+fetch("/api/analytics")
+.then(r=>r.json())
+.then(data=>{
+
+document.getElementById("hits").innerText = data.total_hits;
+
+let html = "";
+
+for(let c in data.countries){
+html += `<p>🌍 ${c} : ${data.countries[c]}</p>`;
+}
+
+document.getElementById("countries").innerHTML = html;
+
+});
+
+}
+
+setInterval(load,2000);
+load();
+
+</script>
+
+</body>
+</html>
