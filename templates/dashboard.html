@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Security Dashboard</title>
+<title>Security Command Center</title>
 
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -9,87 +9,94 @@
 <style>
 
 body{
-background:#020617;
-color:white;
-font-family:Arial;
 margin:0;
+font-family:Arial;
+background:#0d1117;
+color:#e6edf3;
 }
 
 nav{
-text-align:center;
 padding:15px;
-background:#020617;
+text-align:center;
+background:#161b22;
 }
 
 nav a{
-color:#38bdf8;
+color:#58a6ff;
 margin:10px;
 text-decoration:none;
+font-weight:bold;
 }
 
 .container{
-width:90%;
+width:95%;
 margin:auto;
+padding:20px;
 }
 
-.flex{
-display:flex;
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
 gap:20px;
-margin-top:20px;
 }
-
-.left{flex:1;}
-.right{flex:1;}
 
 .card{
-background:#0f172a;
+background:#161b22;
 padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.5);
-margin-bottom:20px;
+border-radius:12px;
+box-shadow:0 0 15px rgba(0,0,0,0.4);
+}
+
+input{
+width:80%;
+padding:10px;
+border:none;
+border-radius:6px;
+margin-right:10px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:6px;
+background:#238636;
+color:white;
+cursor:pointer;
 }
 
 .feed{
-max-height:300px;
+height:300px;
 overflow:auto;
+background:#0d1117;
+padding:10px;
+border-radius:10px;
+border:1px solid #30363d;
 }
 
-.feed div{
-padding:8px;
-margin:4px 0;
+.log{
+padding:6px;
+margin:5px 0;
+font-size:13px;
 border-radius:5px;
-font-size:14px;
 }
 
-.stats{
-display:flex;
-justify-content:space-around;
-text-align:center;
+.safe{background:#033a16;}
+.threat{background:#5a1e1e;}
+
+.badge{
+padding:10px;
+border-radius:8px;
+display:inline-block;
+font-weight:bold;
 }
 
-.stats h2{
-color:#38bdf8;
-}
-
-.row{
-display:flex;
-gap:15px;
-}
-
-.half{
-flex:1;
-}
-
-/* ⭐ DONUT SIZE FIX */
-.donut-box{
-width:260px;
-height:260px;
-margin:auto;
-}
+.safe-badge{background:#238636;}
+.medium-badge{background:#9e6a03;}
+.high-badge{background:#da3633;}
 
 canvas{
 width:100% !important;
-height:100% !important;
+height:250px !important;
 }
 
 </style>
@@ -102,66 +109,41 @@ height:100% !important;
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
 <a href="/about">About</a>
+<a href="/login">Login</a>
+<a href="/register">Register</a>
 </nav>
 
 <div class="container">
 
-<h2>Security Dashboard</h2>
+<h2>🛡 AI Website Security Command Center</h2>
 
-<div class="flex">
-
-<!-- LEFT SIDE -->
-<div class="left">
-
+<!-- INPUT -->
 <div class="card">
-<h3>Live Monitoring</h3>
+
+<input id="url" placeholder="Enter website URL (https://example.com)">
+<button onclick="analyzeURL()">Analyze</button>
+
+<p id="resultText"></p>
+
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+<!-- LIVE FEED -->
+<div class="card">
+<h3>🔥 Live Threat Feed</h3>
 <div id="feed" class="feed"></div>
 </div>
 
-</div>
-
-<!-- RIGHT SIDE -->
-<div class="right">
-
-<!-- STATS -->
+<!-- THREAT SCORE -->
 <div class="card">
-<div class="stats">
-<div>
-<h2 id="attack">5</h2>
-<p>Attack</p>
-</div>
-<div>
-<h2 id="normal">21</h2>
-<p>Normal</p>
-</div>
-</div>
-</div>
+<h3>📊 Threat Score</h3>
 
-<!-- DONUT GRAPH -->
-<div class="card" style="text-align:center">
+<h1 id="score">--</h1>
+<div id="status" class="badge">Waiting...</div>
 
-<h3>Traffic Distribution</h3>
-
-<div class="donut-box">
-<canvas id="donut"></canvas>
-</div>
-
-</div>
-
-<!-- LINE GRAPHS -->
-<div class="row">
-
-<div class="card half">
-<h4>Traffic Trend</h4>
-<canvas id="line1"></canvas>
-</div>
-
-<div class="card half">
-<h4>Attack Pattern</h4>
-<canvas id="line2"></canvas>
-</div>
-
-</div>
+<canvas id="chart"></canvas>
 
 </div>
 
@@ -171,113 +153,95 @@ height:100% !important;
 
 <script>
 
-// COUNTERS
-let attack = 5;
-let normal = 21;
+let chartData = [50,55,52,60,58];
 
-// LIVE FEED
-function addLog(){
+let chart = new Chart(document.getElementById("chart"),{
+type:"line",
+data:{
+labels:["","","","",""],
+datasets:[{
+data:chartData,
+borderColor:"#58a6ff",
+tension:0.4,
+pointRadius:0
+}]
+},
+options:{
+plugins:{legend:{display:false}},
+scales:{x:{display:false},y:{display:false}}
+}
+});
+
+// ===============================
+// ANALYZE URL
+// ===============================
+
+function analyzeURL(){
+
+let url = document.getElementById("url").value;
+
+fetch("/api/analyze?url=" + encodeURIComponent(url))
+.then(res => res.json())
+.then(data => {
+
+document.getElementById("score").innerText = data.score;
+document.getElementById("resultText").innerText =
+"Result: " + data.status;
+
+// badge color
+let badge = document.getElementById("status");
+
+badge.className = "badge";
+
+if(data.status == "SAFE"){
+badge.classList.add("safe-badge");
+}
+else if(data.status == "MEDIUM RISK"){
+badge.classList.add("medium-badge");
+}
+else{
+badge.classList.add("high-badge");
+}
+
+badge.innerText = data.status;
+
+});
+}
+
+// ===============================
+// LIVE FEED (every 1 sec)
+// ===============================
+
+function addEvent(){
+
+fetch("/api/live-event")
+.then(res => res.json())
+.then(data => {
 
 let div = document.createElement("div");
+div.classList.add("log");
 
-if(Math.random() > 0.7){
-attack++;
-div.innerText = "🚨 Attack Detected";
-div.style.background = "#7f1d1d";
+if(data.type === "safe"){
+div.classList.add("safe");
+div.innerText = "🟢 " + data.time + " - " + data.message;
 }else{
-normal++;
-div.innerText = "✅ Normal Traffic";
-div.style.background = "#064e3b";
+div.classList.add("threat");
+div.innerText = "🔴 " + data.time + " - " + data.message;
 }
 
 document.getElementById("feed").prepend(div);
 
-document.getElementById("attack").innerText = attack;
-document.getElementById("normal").innerText = normal;
+// update chart randomly
+chartData.shift();
+chartData.push(chartData[chartData.length-1] + (Math.random()-0.5)*5);
 
-// UPDATE DONUT
-donut.data.datasets[0].data = [normal, attack];
-donut.update();
+chart.update();
 
-}
-
-setInterval(addLog, 2000);
-
-// DONUT CHART (FIXED SIZE)
-let donut = new Chart(document.getElementById("donut"), {
-type: 'doughnut',
-data: {
-labels: ['Normal', 'Attack'],
-datasets: [{
-data: [normal, attack],
-backgroundColor: ['#22c55e', '#ef4444']
-}]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-cutout: '65%',
-plugins: {
-legend: {
-position: 'top'
-}
-}
-}
 });
 
-// GRAPH 1
-let d1 = [10,12,11,13,12];
-
-let g1 = new Chart(document.getElementById("line1"), {
-type: 'line',
-data: {
-labels: ["","","","",""],
-datasets: [{
-data: d1,
-borderColor: "#38bdf8",
-tension: 0.4,
-pointRadius: 0
-}]
-},
-options:{
-plugins:{legend:{display:false}},
-scales:{x:{display:false},y:{display:false}}
 }
-});
 
-// GRAPH 2
-let d2 = [6,7,5,8,7];
-
-let g2 = new Chart(document.getElementById("line2"), {
-type: 'line',
-data: {
-labels: ["","","","",""],
-datasets: [{
-data: d2,
-borderColor: "#f59e0b",
-tension: 0.4,
-pointRadius: 0
-}]
-},
-options:{
-plugins:{legend:{display:false}},
-scales:{x:{display:false},y:{display:false}}
-}
-});
-
-// UPDATE GRAPHS
-setInterval(()=>{
-
-d1.shift();
-d1.push(d1[d1.length-1] + (Math.random()-0.5)*2);
-
-d2.shift();
-d2.push(d2[d2.length-1] + (Math.random()-0.5)*2);
-
-g1.update();
-g2.update();
-
-},3000);
+setInterval(addEvent, 1000);
 
 </script>
 
