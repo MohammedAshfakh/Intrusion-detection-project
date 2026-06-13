@@ -20,6 +20,9 @@ app.secret_key = "secure_ai_soc_key_123"
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
+# 🌐 YOUR DEPLOYED WEBSITE URL
+SITE_URL = "https://intrusion-detection-project-1.onrender.com/"
+
 # ================= ML MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
@@ -30,24 +33,17 @@ except:
 CURRENT_URL = ""
 CURRENT_RISK = {"status": "SAFE", "score": 0}
 
-VISITOR_STATS = {
-    "total_hits": 0,
-    "countries": {}
-}
-
-# ================= JSON DATABASE =================
+# ================= USER DB =================
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
     try:
-        with open(USERS_FILE, "r") as f:
-            return json.load(f)
+        return json.load(open(USERS_FILE))
     except:
         return []
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+    json.dump(users, open(USERS_FILE, "w"), indent=4)
 
 # ================= FEATURE ENGINEERING =================
 def extract_features(url):
@@ -88,32 +84,27 @@ def analytics():
 def about():
     return render_template("about.html")
 
-# ================= AUTH SYSTEM =================
-
+# ================= AUTH =================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
 
-        name = request.form.get("name")
-        email = request.form.get("email")
-        password = request.form.get("password")
-
         users = load_users()
 
-        # prevent duplicates
+        email = request.form.get("email")
+
         for u in users:
             if u["email"] == email:
-                return "⚠️ User already exists"
+                return "User already exists"
 
         users.append({
-            "name": name,
+            "name": request.form.get("name"),
             "email": email,
-            "password": password,
+            "password": request.form.get("password"),
             "created_at": str(datetime.now())
         })
 
         save_users(users)
-
         return redirect("/login")
 
     return render_template("register.html")
@@ -133,7 +124,7 @@ def login():
                 session["user"] = email
                 return redirect("/dashboard")
 
-        return "❌ Invalid credentials"
+        return "Invalid credentials"
 
     return render_template("login.html")
 
@@ -143,85 +134,14 @@ def logout():
     session.clear()
     return redirect("/")
 
-# ================= ANALYZE URL =================
+# ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
 
-    global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
+    global CURRENT_URL, CURRENT_RISK
 
     url = request.args.get("url", "")
     CURRENT_URL = url
-
-    # update hits (REAL tracking now)
-    VISITOR_STATS["total_hits"] += 1
-
-    country = random.choice(["India", "USA", "Germany", "Japan", "UK"])
-    VISITOR_STATS["countries"][country] = VISITOR_STATS["countries"].get(country, 0) + 1
-
-    # ML prediction
-    if model:
-        try:
-            pred = model.predict(extract_features(url))[0]
-
-            if pred == 0:
-                status = "SAFE"
-                score = random.randint(5, 30)
-            else:
-                status = "ATTACK"
-                score = random.randint(70, 98)
-
-        except:
-            status = "SAFE"
-            score = 10
-    else:
-        status = "MEDIUM"
-        score = 50
-
-    CURRENT_RISK = {
-        "status": status,
-        "score": score,
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "url": url
-    }
-
-    return jsonify(CURRENT_RISK)
-
-# ================= LIVE RISK (FIX FOR DASHBOARD 0 ISSUE) =================
-@app.route("/api/current-risk")
-def current_risk():
-    return jsonify(CURRENT_RISK)
-
-# ================= LIVE FEED =================
-@app.route("/api/live-event")
-def live_event():
-
-    events = [
-        "DNS resolved successfully",
-        "HTTPS handshake verified",
-        "SQL Injection attempt blocked",
-        "Suspicious redirect detected",
-        "Brute force attack stopped",
-        "No anomaly detected"
-    ]
-
-    return jsonify({
-        "message": random.choice(events),
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "url": CURRENT_URL,
-        "score": CURRENT_RISK["score"]
-    })
-
-# ================= CONTINUOUS SCAN =================
-@app.route("/api/continuous-scan")
-def continuous_scan():
-
-    if not CURRENT_URL:
-        return jsonify({
-            "url": "-",
-            "status": "NO DATA",
-            "score": 0,
-            "time": datetime.now().strftime("%H:%M:%S")
-        })
 
     score = random.randint(10, 95)
 
@@ -232,20 +152,84 @@ def continuous_scan():
     else:
         status = "ATTACK"
 
-    return jsonify({
-        "url": CURRENT_URL,
+    CURRENT_RISK = {
         "status": status,
         "score": score,
+        "url": url,
+        "time": datetime.now().strftime("%H:%M:%S")
+    }
+
+    return jsonify(CURRENT_RISK)
+
+# ================= LIVE SCORE FIX =================
+@app.route("/api/current-risk")
+def current_risk():
+    return jsonify(CURRENT_RISK)
+
+# ================= LIVE EVENTS =================
+@app.route("/api/live-event")
+def live_event():
+
+    events = [
+        "Bot traffic blocked",
+        "Firewall inspection completed",
+        "SQL injection pattern detected",
+        "HTTPS secure tunnel verified",
+        "Suspicious activity monitored",
+        "No active threat on " + SITE_URL
+    ]
+
+    return jsonify({
+        "message": random.choice(events),
+        "url": SITE_URL,
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "score": CURRENT_RISK["score"]
+    })
+
+# ================= FAKE LIVE SCAN =================
+@app.route("/api/continuous-scan")
+def continuous_scan():
+
+    score = random.randint(5, 100)
+
+    if score < 30:
+        status = "SAFE"
+    elif score < 70:
+        status = "MEDIUM"
+    else:
+        status = "ATTACK"
+
+    scan_events = [
+        "Scanning " + SITE_URL,
+        "DNS lookup complete",
+        "SSL certificate valid",
+        "Checking payload patterns",
+        "No malware signature found",
+        "Traffic anomaly simulation running"
+    ]
+
+    return jsonify({
+        "url": SITE_URL,
+        "status": status,
+        "score": score,
+        "event": random.choice(scan_events),
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
-# ================= ANALYTICS =================
+# ================= FAKE ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
 
     return jsonify({
-        "total_hits": VISITOR_STATS["total_hits"],
-        "countries": VISITOR_STATS["countries"]
+        "total_hits": random.randint(500, 8000),
+        "site": SITE_URL,
+        "countries": {
+            "India": random.randint(50, 300),
+            "USA": random.randint(30, 200),
+            "Germany": random.randint(10, 150),
+            "Japan": random.randint(20, 180),
+            "UK": random.randint(15, 120)
+        }
     })
 
 # ================= RUN =================

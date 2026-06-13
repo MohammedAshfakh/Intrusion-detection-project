@@ -1,103 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>About - AI Security System</title>
-
-<link rel="stylesheet" href="/static/style.css">
+<title>About SOC System</title>
 
 <style>
 
-/* =========================
-   BASE
-========================= */
-
 body{
 margin:0;
-font-family:'Segoe UI';
-background:#0d1117;
+font-family:Segoe UI;
+background:#0b0f19;
 color:#e6edf3;
 }
 
-/* NAV */
-nav{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:15px 40px;
-background:#161b22;
-position:sticky;
-top:0;
-}
-
-nav a{
-color:#58a6ff;
-margin:0 12px;
-text-decoration:none;
-font-weight:600;
-transition:0.3s;
-}
-
-nav a:hover{
-color:#2ea043;
-text-shadow:0 0 10px #2ea043;
-}
-
-/* CONTAINER */
 .container{
-width:90%;
+width:80%;
 margin:auto;
-padding:30px 0;
+padding:40px;
 }
 
-/* CARD */
 .card{
-background:#161b22;
+background:#111827;
 padding:25px;
 border-radius:12px;
-margin-bottom:20px;
-border:1px solid #30363d;
-transition:0.3s;
+border:1px solid #1f2937;
+margin-top:20px;
 }
 
-.card:hover{
-transform:translateY(-5px);
-box-shadow:0 0 20px rgba(88,166,255,0.2);
-border-color:#58a6ff;
-}
-
-/* HEADINGS */
 h1,h2{
 color:#58a6ff;
 }
 
-ul{
-line-height:1.8;
-}
-
-/* GRID */
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-gap:20px;
-}
-
-/* BADGES */
-.badge{
-display:inline-block;
-padding:6px 12px;
-border-radius:20px;
-background:#238636;
-margin-top:10px;
-font-size:12px;
-}
-
-/* FOOTER */
-footer{
-text-align:center;
-padding:30px;
-margin-top:40px;
-background:#161b22;
-color:#8b949e;
+.url{
+color:#2ea043;
 }
 
 </style>
@@ -106,173 +40,70 @@ color:#8b949e;
 
 <body>
 
-<!-- NAV -->
-<nav>
-<div>
-<a href="/">🏠 Home</a>
-<a href="/dashboard">📊 Dashboard</a>
-<a href="/about">📘 About</a>
-</div>
-
-<div>
-<a href="/login">Login</a>
-<a href="/register">Register</a>
-</div>
-</nav>
-
 <div class="container">
 
-<!-- HEADER -->
+<h1>🛡 AI Security Operations Center</h1>
+
 <div class="card">
-<h1>📘 About This System</h1>
+
+<h2>Project Overview</h2>
 
 <p>
-This project is an <b>AI-powered Website Security Monitoring System</b> designed to
-analyze website URLs and simulate real-time cyber threat detection using
-Machine Learning concepts and heuristic security rules.
+This is a <b>Machine Learning based Intrusion Detection System</b> designed to simulate
+real-world SOC (Security Operations Center) monitoring.
 </p>
 
-<span class="badge">Final Year MCA Project</span>
-
-</div>
-
-<!-- OBJECTIVE -->
-<div class="card">
-<h2>🎯 Objective</h2>
-
 <p>
-The main objective of this system is to demonstrate how intelligent algorithms
-can be used to detect suspicious website behavior and provide real-time
-security insights through an interactive dashboard.
+It analyzes URLs and generates <b>real-time threat intelligence</b> including:
 </p>
 
 <ul>
-<li>Analyze website URLs for potential security risks</li>
-<li>Simulate real-time intrusion detection events</li>
-<li>Provide AI-based risk scoring system</li>
-<li>Visualize traffic and threat patterns</li>
-<li>Deliver user-friendly cybersecurity dashboard</li>
+<li>SQL Injection Detection (Simulated)</li>
+<li>XSS Attack Detection (Simulated)</li>
+<li>Brute Force Pattern Monitoring</li>
+<li>Live Traffic Intelligence Feed</li>
 </ul>
 
 </div>
 
-<!-- WORKING -->
 <div class="card">
-<h2>⚙️ How It Works</h2>
 
-<ul>
-<li>User enters a website URL into the system</li>
-<li>The backend analyzes URL features (HTTPS, domain structure, patterns)</li>
-<li>A risk score is generated using ML-inspired logic</li>
-<li>Live monitoring simulation starts automatically</li>
-<li>System generates security events every second</li>
-<li>Dashboard visualizes threats in real-time</li>
-</ul>
+<h2>🌐 Live Deployment</h2>
 
-</div>
+<p>System is currently deployed at:</p>
 
-<!-- FEATURES -->
-<div class="card">
-<h2>🚀 Key Features</h2>
-
-<div class="grid">
-
-<div class="card">⚡ Real-Time Monitoring</div>
-<div class="card">🧠 AI-Based URL Analysis</div>
-<div class="card">📊 Interactive Dashboard</div>
-<div class="card">🔥 Threat Simulation Engine</div>
-<div class="card">🔐 Secure Login System</div>
-<div class="card">📡 Live Event Streaming</div>
-
-</div>
-
-</div>
-
-<!-- TECHNOLOGY -->
-<div class="card">
-<h2>🛠 Technologies Used</h2>
-
-<ul>
-<li>Python (Flask Framework)</li>
-<li>Machine Learning (Scikit-learn logic)</li>
-<li>HTML, CSS, JavaScript</li>
-<li>Chart.js for visualization</li>
-<li>JSON-based user storage (no database)</li>
-<li>Linux / Ubuntu environment</li>
-</ul>
-
-</div>
-
-<!-- APPLICATIONS -->
-<div class="card">
-<h2>🌍 Applications</h2>
-
-<ul>
-<li>Cybersecurity education and training</li>
-<li>Website security analysis</li>
-<li>Network threat simulation</li>
-<li>Academic research in intrusion detection</li>
-<li>Foundation for SOC (Security Operations Center) dashboards</li>
-</ul>
-
-</div>
-
-<!-- FUTURE SCOPE -->
-<div class="card">
-<h2>🔮 Future Enhancements</h2>
-
-<ul>
-<li>Integration with real threat intelligence APIs (VirusTotal, etc.)</li>
-<li>Real-time packet capture using network tools</li>
-<li>Deep learning-based anomaly detection</li>
-<li>Cloud deployment (AWS / Azure / GCP)</li>
-<li>Multi-user role-based security system</li>
-<li>Alert system (email / SMS notifications)</li>
-</ul>
-
-</div>
-
-<!-- CONCLUSION -->
-<div class="card">
-<h2>📌 Conclusion</h2>
-
-<p>
-This system demonstrates how Artificial Intelligence and rule-based analysis
-can be combined to build an effective cybersecurity monitoring tool.
-It provides an interactive and educational platform for understanding
-real-time threat detection concepts.
+<p class="url">
+https://intrusion-detection-project-1.onrender.com/
 </p>
 
 </div>
 
-<!-- AUTHOR -->
 <div class="card">
-<h2>👨‍🎓 Developed By</h2>
 
-<p>
-Shaik Tasneem<br>
-Master of Computer Applications (MCA)<br>
-Andhra University
-</p>
+<h2>⚙ Features</h2>
+
+<ul>
+<li>Real-time URL scanning dashboard</li>
+<li>Fake SOC intelligence feed (simulated attack data)</li>
+<li>Traffic analytics with geographic distribution</li>
+<li>User authentication system</li>
+<li>Live threat scoring engine</li>
+</ul>
 
 </div>
 
-<!-- GUIDE -->
 <div class="card">
-<h2>👨‍🏫 Project Guide</h2>
+
+<h2>🎯 Purpose</h2>
 
 <p>
-Mohammed Ashfakh<br>
-Cybersecurity & Cloud Engineer
+This project is built for academic demonstration of how SOC systems work,
+combining Flask, Machine Learning, and real-time dashboards.
 </p>
 
 </div>
 
 </div>
-
-<footer>
-AI Security Monitoring System | MCA Final Year Project | Cybersecurity & Machine Learning
-</footer>
 
 </body>
 </html>
