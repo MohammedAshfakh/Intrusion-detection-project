@@ -239,10 +239,11 @@ def analyze():
 
 @app.route("/api/live-event")
 def live_event():
-    base = CURRENT_RISK["score"]
 
-    # fluctuate score continuously (independent of URL)
-    score = max(5, min(100, base + random.randint(-10, 10)))
+    base_score = CURRENT_RISK.get("score", 20)
+
+    # always fluctuate so dashboard looks alive
+    score = max(0, min(100, base_score + random.randint(-20, 20)))
 
     safe_events = [
         "DNS Resolution OK",
@@ -251,35 +252,48 @@ def live_event():
         "No Threat Indicators Found"
     ]
 
-    threat_events = [
-        "Bot activity detected",
-        "SQL Injection attempt blocked",
-        "Brute force pattern detected",
-        "Suspicious redirect chain",
-        "Malware signature matched",
-        "Phishing attempt detected"
+    medium_events = [
+        "Unusual traffic pattern detected",
+        "Port scan activity monitored",
+        "Abnormal login attempts observed"
     ]
 
-    # classification
+    threat_events = [
+        "Suspicious script execution detected",
+        "Possible brute force attack",
+        "Malicious payload signature found"
+    ]
+
+    high_events = [
+        "CRITICAL: System intrusion attempt",
+        "Ransomware behavior detected",
+        "Advanced persistent threat (APT) activity",
+        "Data exfiltration attempt detected"
+    ]
+
+    # ================= SEVERITY ENGINE =================
     if score < 30:
-        t = "safe"
+        status = "SAFE"
         msg = random.choice(safe_events)
-    else:
-        t = "threat"
+
+    elif 30 <= score < 50:
+        status = "MEDIUM RISK"
+        msg = random.choice(medium_events)
+
+    elif 50 <= score < 60:
+        status = "THREAT"
         msg = random.choice(threat_events)
 
-    # 🇮🇳 IST TIME FIX
-    from datetime import datetime
-    import pytz
-
-    ist = pytz.timezone("Asia/Kolkata")
-    current_time = datetime.now(ist).strftime("%H:%M:%S")
+    else:
+        status = "HIGH RISK"
+        msg = random.choice(high_events)
 
     return jsonify({
-        "type": t,
+        "type": status.lower().replace(" ", "_"),
         "message": msg,
-        "time": current_time,
-        "score": score
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "score": score,
+        "status": status
     })
 
 # ================= ANALYTICS FIX =================
