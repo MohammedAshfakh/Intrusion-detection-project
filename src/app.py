@@ -7,14 +7,13 @@ import joblib
 import re
 from urllib.parse import urlparse
 
-# optional requests (safe for deployment)
+# optional requests (safe fallback)
 try:
     import requests
 except:
     requests = None
 
 
-# ================= BASE PATH =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -29,11 +28,10 @@ USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
 
-# ================= SAFE MODEL LOAD =================
+# ================= MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
-except Exception as e:
-    print("Model load failed:", e)
+except:
     model = None
 
 
@@ -145,6 +143,7 @@ def logout():
 # ================= URL VALIDATION =================
 def normalize_url(url):
     url = url.strip()
+
     if not url:
         return None
 
@@ -159,9 +158,11 @@ def is_valid_domain(url):
         parsed = urlparse(url)
         domain = parsed.netloc
 
+        # must contain dot (google.com, example.in)
         if "." not in domain:
             return False
 
+        # must not be garbage
         if len(domain) < 4:
             return False
 
@@ -206,10 +207,11 @@ def analyze():
         return jsonify({
             "status": "INVALID URL",
             "score": 0,
+            "issues": [],
             "message": "Enter valid domain like google.com"
         })
 
-    # check website reachability
+    # optional reachability check
     if requests:
         try:
             r = requests.get(url, timeout=4)
@@ -217,12 +219,14 @@ def analyze():
                 return jsonify({
                     "status": "ERROR",
                     "score": 100,
+                    "issues": [],
                     "message": "Website not reachable"
                 })
         except:
             return jsonify({
                 "status": "ERROR",
                 "score": 100,
+                "issues": [],
                 "message": "Website not reachable"
             })
 
@@ -230,10 +234,10 @@ def analyze():
 
     score, issues = calculate_risk(url)
 
-    # ML prediction (optional)
+    # ML model (optional)
     if model:
         try:
-            pred = model.predict([[
+            pred = model.predict([[ 
                 len(url),
                 url.count("."),
                 url.count("-"),
@@ -245,7 +249,6 @@ def analyze():
             if pred == 1:
                 score += 20
                 issues.append("ML model flagged risk")
-
         except:
             pass
 
@@ -258,7 +261,10 @@ def analyze():
     else:
         status = "HIGH RISK"
 
-    CURRENT_RISK = {"status": status, "score": score}
+    CURRENT_RISK = {
+        "status": status,
+        "score": score
+    }
 
     return jsonify({
         "status": status,
@@ -272,23 +278,24 @@ def analyze():
 def live_event():
     score = CURRENT_RISK["score"]
 
-    safe = [
+    safe_events = [
         "DNS OK",
         "HTTPS Verified",
         "Firewall Stable"
     ]
 
-    threat = [
+    threat_events = [
         "Suspicious activity detected",
         "Malware signature match",
         "Phishing pattern found"
     ]
 
-    msg = random.choice(safe if score < 30 else threat)
+    # small randomness → graph fluctuates
+    score = max(5, min(100, score + random.randint(-5, 5)))
 
     return jsonify({
         "type": "safe" if score < 30 else "threat",
-        "message": msg,
+        "message": random.choice(safe_events if score < 30 else threat_events),
         "time": datetime.now().strftime("%H:%M:%S"),
         "score": score
     })

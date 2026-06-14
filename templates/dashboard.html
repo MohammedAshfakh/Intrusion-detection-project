@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
 body{
 margin:0;
 font-family:'Segoe UI';
@@ -15,11 +14,9 @@ background:#0b0f19;
 color:#e6edf3;
 }
 
-/* NAV */
 nav{
 display:flex;
 justify-content:space-between;
-align-items:center;
 padding:15px 25px;
 background:#111827;
 border-bottom:1px solid #1f2937;
@@ -27,21 +24,12 @@ border-bottom:1px solid #1f2937;
 
 nav a{
 color:#58a6ff;
-text-decoration:none;
 margin-right:12px;
+text-decoration:none;
 font-weight:600;
 }
 
-nav a:hover{
-color:#2ea043;
-}
-
-/* LAYOUT */
-.container{
-width:95%;
-margin:auto;
-padding:20px;
-}
+.container{width:95%;margin:auto;padding:20px;}
 
 .grid{
 display:grid;
@@ -50,21 +38,13 @@ gap:20px;
 margin-top:20px;
 }
 
-/* CARD */
 .card{
 background:#111827;
 border:1px solid #1f2937;
 padding:20px;
 border-radius:12px;
-transition:0.3s;
 }
 
-.card:hover{
-transform:translateY(-3px);
-border-color:#58a6ff;
-}
-
-/* INPUT */
 input{
 width:70%;
 padding:10px;
@@ -76,19 +56,13 @@ color:white;
 
 button{
 padding:10px 14px;
-border:none;
-border-radius:6px;
 background:#238636;
+border:none;
 color:white;
+border-radius:6px;
 cursor:pointer;
-font-weight:bold;
 }
 
-button:hover{
-background:#2ea043;
-}
-
-/* FEED */
 .feed{
 height:320px;
 overflow:auto;
@@ -98,57 +72,20 @@ padding:10px;
 border-radius:10px;
 }
 
-.log{
-padding:8px;
-margin:5px 0;
-font-size:13px;
-border-radius:6px;
-}
-
+.log{padding:6px;margin:5px 0;font-size:13px;border-radius:6px;}
 .safe{background:#052e16;border-left:4px solid #22c55e;}
 .threat{background:#3b0a0a;border-left:4px solid #ef4444;}
 
-/* BADGE */
-.badge{
-padding:5px 10px;
-border-radius:20px;
-font-size:12px;
-font-weight:bold;
-}
-
-.safe-b{background:#166534;}
-.med-b{background:#a16207;}
-.high-b{background:#991b1b;}
-
-/* HERO */
-.hero{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:10px;
-}
-
-/* SCORE */
 #score{
 font-size:50px;
-margin:0;
 color:#58a6ff;
 }
-
-.small{
-font-size:13px;
-color:#9ca3af;
-}
-
 </style>
-
 </head>
 
 <body>
 
-<!-- NAV -->
 <nav>
-
 <div>
 <a href="/">Home</a>
 <a href="/dashboard">Dashboard</a>
@@ -156,50 +93,31 @@ color:#9ca3af;
 <a href="/analytics">Analytics</a>
 <a href="/about">About</a>
 </div>
-
 </nav>
 
 <div class="container">
 
-<!-- HERO -->
-<div class="hero">
-
-<div>
-<h2>🛡 AI Security Operations Center</h2>
-<p class="small">Real-time Threat Detection Dashboard</p>
-</div>
-
-<div>
-<h1 id="score">0</h1>
-<div id="badge"></div>
-</div>
-
-</div>
-
-<!-- INPUT -->
 <div class="card">
+<h2>🛡 AI Security Operations Center</h2>
 
-<h3>🔍 Analyze Website</h3>
+<h1 id="score">0%</h1>
+<div id="badge"></div>
 
-<input id="url" placeholder="Enter URL (https://example.com)">
+<input id="url" placeholder="Enter URL (google.com)">
 <button onclick="analyze()">Scan</button>
 
 <p id="result"></p>
-
 </div>
 
-<!-- GRID -->
 <div class="grid">
 
-<!-- LIVE FEED -->
 <div class="card">
-<h3>🔥 Live Threat Feed</h3>
+<h3>🔥 Live Feed</h3>
 <div class="feed" id="feed"></div>
 </div>
 
-<!-- CHART -->
 <div class="card">
-<h3>📊 Threat Score (Per Second)</h3>
+<h3>📊 Threat Graph</h3>
 <canvas id="chart"></canvas>
 </div>
 
@@ -208,46 +126,9 @@ color:#9ca3af;
 </div>
 
 <script>
+
 let currentURL = "";
-let intervalStarted = false;
-
-/* ================= ANALYZE ================= */
-function analyze() {
-    let url = document.getElementById("url").value;
-    currentURL = url;
-
-    fetch("/api/analyze?url=" + encodeURIComponent(url))
-    .then(r => r.json())
-    .then(data => {
-
-        document.getElementById("score").innerText = data.score + "%";
-
-        let badge = document.getElementById("badge");
-
-        let cls = "safe-b";
-        if (data.status.includes("MEDIUM")) cls = "med-b";
-        if (data.status.includes("HIGH")) cls = "high-b";
-
-        badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
-
-        let html = "";
-
-        if (data.issues && data.issues.length) {
-            html += "<br><b>Detected Issues:</b><ul>";
-            data.issues.forEach(i => {
-                html += `<li>${i}</li>`;
-            });
-            html += "</ul>";
-        }
-
-        document.getElementById("result").innerHTML = html;
-
-        if (!intervalStarted) {
-            setInterval(feed, 1000);
-            intervalStarted = true;
-        }
-    });
-}
+let feedStarted = false;
 
 /* ================= CHART ================= */
 let labels = [];
@@ -275,28 +156,75 @@ y: { min: 0, max: 100 }
 }
 });
 
-/* ================= FEED ================= */
-function feed() {
-    if (!currentURL) return;
 
-    fetch("/api/live-event")
-    .then(r => r.json())
-    .then(data => {
+/* ================= ANALYZE ================= */
+function analyze(){
 
-        let div = document.createElement("div");
-        div.className = data.type === "threat" ? "log threat" : "log safe";
-        div.innerText = `[${data.time}] ${data.message}`;
-        document.getElementById("feed").prepend(div);
+let url = document.getElementById("url").value;
+currentURL = url;
 
-        labels.push(data.time);
-        values.push(data.score);
+fetch("/api/analyze?url=" + encodeURIComponent(url))
+.then(r => r.json())
+.then(data => {
 
-        if (labels.length > 20) {
-            labels.shift();
-            values.shift();
-        }
+document.getElementById("score").innerText = data.score + "%";
 
-        chart.update();
-    });
+let badge = document.getElementById("badge");
+
+let cls = "safe-b";
+if (data.status.includes("MEDIUM")) cls = "med-b";
+if (data.status.includes("HIGH")) cls = "high-b";
+
+badge.innerHTML = `<b>${data.status}</b>`;
+
+/* issues */
+let html = "";
+if (data.issues && data.issues.length) {
+html += "<b>Issues:</b><ul>";
+data.issues.forEach(i => html += `<li>${i}</li>`);
+html += "</ul>";
 }
+document.getElementById("result").innerHTML = html;
+
+/* start feed only once */
+if (!feedStarted) {
+feedStarted = true;
+setInterval(feed, 1000);
+}
+});
+}
+
+
+/* ================= LIVE FEED ================= */
+function feed(){
+
+if(!currentURL) return;
+
+fetch("/api/live-event")
+.then(r => r.json())
+.then(data => {
+
+let div = document.createElement("div");
+div.className = data.type === "threat" ? "log threat" : "log safe";
+div.innerText = `[${data.time}] ${data.message}`;
+document.getElementById("feed").prepend(div);
+
+/* graph update */
+let score = data.score;
+
+labels.push(new Date().toLocaleTimeString());
+values.push(score);
+
+if(labels.length > 25){
+labels.shift();
+values.shift();
+}
+
+chart.update();
+});
+}
+
 </script>
+
+</body>
+</html>
