@@ -160,45 +160,93 @@ def extract_features(url):
 # ================= ANALYZE URL =================
 @app.route("/api/analyze")
 def analyze():
+
     global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
 
-    url = request.args.get("url", "")
+    url = request.args.get("url", "").strip()
 
     if not url:
-       url = "https://intrusion-detection-project-1.onrender.com/"
+        return jsonify({
+            "status": "ERROR",
+            "score": 100,
+            "message": "Please enter a URL"
+        })
 
-    CURRENT_URL = url 
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
 
-    # fake traffic stats
+    CURRENT_URL = url
+
+    # check if website exists
+    try:
+        response = requests.get(url, timeout=5)
+
+        if response.status_code >= 400:
+            return jsonify({
+                "status": "ERROR",
+                "score": 100,
+                "message": "Website not reachable"
+            })
+
+    except:
+        return jsonify({
+            "status": "ERROR",
+            "score": 100,
+            "message": "Invalid URL or Website Not Found"
+        })
+
     VISITOR_STATS["total_hits"] += 1
 
-    country = random.choice(["India", "USA", "UK", "Germany", "Japan", "Canada"])
+    country = random.choice([
+        "India",
+        "USA",
+        "UK",
+        "Germany",
+        "Japan",
+        "Canada"
+    ])
 
-    VISITOR_STATS["countries"][country] = VISITOR_STATS["countries"].get(country, 0) + 1
+    VISITOR_STATS["countries"][country] = (
+        VISITOR_STATS["countries"].get(country, 0) + 1
+    )
 
-    # ML prediction
+    score, issues = calculate_risk(url)
+
     if model:
         try:
-            pred = model.predict(extract_features(url))[0]
+            pred = model.predict(
+                extract_features(url)
+            )[0]
 
-            if pred == 0:
-                status = "SAFE"
-                score = random.randint(5, 30)
-            else:
-                status = "ATTACK"
-                score = random.randint(70, 95)
+            if pred == 1:
+                score += 20
+                issues.append(
+                    "ML Model detected suspicious pattern"
+                )
 
         except:
-            status = "SAFE"
-            score = 10
-    else:
+            pass
+
+    score = min(score, 100)
+
+    if score < 30:
+        status = "LOW RISK"
+    elif score < 70:
         status = "MEDIUM RISK"
-        score = 50
+    else:
+        status = "HIGH RISK"
 
-    CURRENT_RISK = {"status": status, "score": score}
+    CURRENT_RISK = {
+        "status": status,
+        "score": score,
+        "issues": issues
+    }
 
-    return jsonify(CURRENT_RISK)
-
+    return jsonify({
+        "status": status,
+        "score": score,
+        "issues": issues
+    })
 # ================= LIVE EVENTS =================
 @app.route("/api/live-event")
 def live_event():
@@ -208,19 +256,20 @@ def live_event():
 
     safe_events = [
         "DNS Resolution Successful",
-        "HTTPS Handshake Verified",
+        "HTTPS Certificate Verified",
         "Firewall Operating Normally",
-        "No Anomaly Detected"
+        "No Threat Indicators Found"
     ]
 
     threat_events = [
-        "SQL Injection Attempt Blocked",
-        "Brute Force Attack Detected",
-        "Malicious URL Signature Found",
-        "Suspicious Redirect Behavior"
+        "Suspicious URL Pattern Detected",
+        "Potential Phishing Indicator",
+        "Redirect Chain Found",
+        "Malicious Signature Matched",
+        "Anomaly Detected"
     ]
 
-    if status == "SAFE":
+    if score < 30:
         msg = random.choice(safe_events)
         t = "safe"
     else:
@@ -234,7 +283,6 @@ def live_event():
         "url": CURRENT_URL,
         "score": score
     })
-
 # ================= CONTINUOUS SCAN =================
 @app.route("/api/continuous-scan")
 def continuous_scan():

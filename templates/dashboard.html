@@ -221,7 +221,8 @@ fetch("/api/analyze?url="+encodeURIComponent(url))
 .then(r=>r.json())
 .then(data=>{
 
-document.getElementById("score").innerText = data.score;
+document.getElementById("score").innerText =
+    data.score + "%";
 
 /* badge */
 let badge = document.getElementById("badge");
@@ -230,7 +231,25 @@ let cls = "safe-b";
 if(data.status.includes("MEDIUM")) cls="med-b";
 if(data.status.includes("ATTACK")) cls="high-b";
 
-badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
+badge.innerHTML =
+`<span class="badge ${cls}">
+${data.status}
+</span>`;
+
+let html = "";
+
+if(data.issues && data.issues.length){
+
+    html += "<br><b>Detected Issues:</b><ul>";
+
+    data.issues.forEach(i=>{
+        html += `<li>${i}</li>`;
+    });
+
+    html += "</ul>";
+}
+
+document.getElementById("result").innerHTML = html;
 
 });
 
