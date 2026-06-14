@@ -163,24 +163,32 @@ def register():
             "password": request.form.get("password")
         }
 
-        # STEP 1: load existing users
+        users = []
+
+        # 🔥 SAFE LOAD (prevents crash)
         try:
-            with open("users.json", "r") as f:
-                users = json.load(f)
+            if os.path.exists("users.json"):
+                with open("users.json", "r") as f:
+                    content = f.read().strip()
+                    if content:
+                        users = json.loads(content)
         except:
             users = []
 
-        # STEP 2: append new user (STACK BEHAVIOR)
+        # ensure it's always a list
+        if not isinstance(users, list):
+            users = []
+
+        # append new user
         users.append(new_user)
 
-        # STEP 3: save back
+        # safe write
         with open("users.json", "w") as f:
             json.dump(users, f, indent=4)
 
         return redirect("/login")
 
     return render_template("register.html")
-
 
 
 
