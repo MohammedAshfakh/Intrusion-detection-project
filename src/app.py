@@ -26,6 +26,7 @@ app.secret_key = "soc_ai_secret_key_123"
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
+
 # ================= MODEL =================
 try:
     model = joblib.load(MODEL_PATH)
@@ -37,12 +38,18 @@ except:
 CURRENT_URL = ""
 CURRENT_RISK = {"status": "SAFE", "score": 10}
 
+ACTIVE_SCAN_SCORE = 10
+ACTIVE_SCAN_URL = "Live Network"
+
+
 VISITOR_STATS = {
     "total_hits": 5,
     "countries": {
         "India": 3,
         "USA": 2,
-        "Germany": 1
+        "Germany": 1,
+        "UK": 1,
+        "Japan": 1
     }
 }
 
@@ -136,7 +143,7 @@ def logout():
     return redirect("/login")
 
 
-# ================= URL VALIDATION =================
+# ================= URL HELPERS =================
 def normalize_url(url):
     url = url.strip()
     if not url:
@@ -169,13 +176,12 @@ def calculate_risk(url):
 
     if "verify" in url.lower():
         score += 15
-        issues.append("Phishing verification pattern")
+        issues.append("Phishing pattern detected")
 
     if len(url) > 70:
         score += 10
         issues.append("Long URL anomaly")
 
-    # random behavior so dashboard fluctuates
     score += random.randint(-5, 10)
 
     return score, issues
@@ -184,7 +190,7 @@ def calculate_risk(url):
 # ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
-    global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
+    global CURRENT_URL, CURRENT_RISK, ACTIVE_SCAN_SCORE, ACTIVE_SCAN_URL, VISITOR_STATS
 
     url = normalize_url(request.args.get("url", ""))
 
@@ -197,16 +203,14 @@ def analyze():
         })
 
     CURRENT_URL = url
+    ACTIVE_SCAN_URL = url
 
-    # update analytics
     VISITOR_STATS["total_hits"] += 1
-
     country = random.choice(["India", "USA", "Germany", "UK", "Japan"])
     VISITOR_STATS["countries"][country] = VISITOR_STATS["countries"].get(country, 0) + 1
 
     score, issues = calculate_risk(url)
 
-    # ML optional
     if model:
         try:
             pred = model.predict([[len(url), url.count("."), url.count("-"),
@@ -227,6 +231,7 @@ def analyze():
         status = "HIGH RISK"
 
     CURRENT_RISK = {"status": status, "score": score}
+    ACTIVE_SCAN_SCORE = score
 
     return jsonify({
         "status": status,
@@ -235,79 +240,53 @@ def analyze():
     })
 
 
-# ================= LIVE EVENT (FIXED + RICH) =================
-
+# ================= LIVE EVENT =================
 @app.route("/api/live-event")
 def live_event():
+    global ACTIVE_SCAN_SCORE, ACTIVE_SCAN_URL
 
-    base_score = CURRENT_RISK.get("score", 20)
+    ACTIVE_SCAN_SCORE += random.randint(-8, 8)
+    ACTIVE_SCAN_SCORE = max(0, min(100, ACTIVE_SCAN_SCORE))
 
-    # always fluctuate so dashboard looks alive
-    score = max(0, min(100, base_score + random.randint(-20, 20)))
+    score = ACTIVE_SCAN_SCORE
 
-    safe_events = [
-        "DNS Resolution OK",
-        "HTTPS Certificate Verified",
-        "Firewall Stable",
-        "No Threat Indicators Found"
-    ]
-
-    medium_events = [
-        "Unusual traffic pattern detected",
-        "Port scan activity monitored",
-        "Abnormal login attempts observed"
-    ]
-
-    threat_events = [
-        "Suspicious script execution detected",
-        "Possible brute force attack",
-        "Malicious payload signature found"
-    ]
-
-    high_events = [
-        "CRITICAL: System intrusion attempt",
-        "Ransomware behavior detected",
-        "Advanced persistent threat (APT) activity",
-        "Data exfiltration attempt detected"
-    ]
-
-    # ================= SEVERITY ENGINE =================
     if score < 30:
         status = "SAFE"
-        msg = random.choice(safe_events)
+        events = ["DNS OK", "Firewall Stable", "No Threat Found"]
 
-    elif 30 <= score < 50:
+    elif score < 50:
         status = "MEDIUM RISK"
-        msg = random.choice(medium_events)
+        events = ["Suspicious Activity", "Login anomaly detected"]
 
-    elif 50 <= score < 60:
+    elif score < 60:
         status = "THREAT"
-        msg = random.choice(threat_events)
+        events = ["Bot Activity Detected", "Port Scan Detected"]
 
     else:
         status = "HIGH RISK"
-        msg = random.choice(high_events)
+        events = ["CRITICAL ATTACK", "Data Exfiltration Attempt"]
 
     return jsonify({
-        "type": status.lower().replace(" ", "_"),
-        "message": msg,
-        "time": datetime.now().strftime("%H:%M:%S"),
+        "type": status,
+        "status": status,
         "score": score,
-        "status": status
+        "url": ACTIVE_SCAN_URL,
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "event": random.choice(events)
     })
 
-# ================= ANALYTICS FIX =================
+
+# ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics():
     global VISITOR_STATS
 
-    # keep numbers increasing so UI is not zero
-    VISITOR_STATS["total_hits"] += random.randint(1, 3)
+    VISITOR_STATS["total_hits"] += random.randint(2, 5)
 
-    for c in ["India", "USA", "Germany", "UK", "Japan"]:
-        VISITOR_STATS["countries"][c] = VISITOR_STATS["countries"].get(c, 0) + random.randint(0, 2)
+    for c in VISITOR_STATS["countries"]:
+        VISITOR_STATS["countries"][c] += random.randint(1, 3)
 
-    return jsonify(VISITOR_STATS)
+    return VISITOR_STATS
 
 
 # ================= RUN =================
