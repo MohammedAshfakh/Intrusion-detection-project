@@ -236,6 +236,27 @@ def analytics_api():
 
     return VISITOR_STATS
 
+@app.route("/api/dashboard-stream")
+def dashboard_stream():
+    score = CURRENT_RISK["score"] + random.randint(-10, 10)
+    score = max(0, min(100, score))
+
+    events = [
+        "No anomaly detected",
+        "Bot traffic observed",
+        "Firewall OK",
+        "Suspicious packet dropped",
+        "Login spike detected",
+        "Port scan attempt blocked",
+        "Normal traffic flow"
+    ]
+
+    return jsonify({
+        "score": score,
+        "event": random.choice(events),
+        "time": datetime.now().strftime("%H:%M:%S")
+    })
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
