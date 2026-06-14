@@ -1,164 +1,218 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Live Scan</title>
+<title>Live Threat Scanner</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{background:#0b0f19;color:white;font-family:Segoe UI;}
-.card{padding:20px;margin:20px;background:#111827;border-radius:10px;}
-.box{padding:20px;background:#111827;margin:10px;border-radius:10px;}
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#0b0f19;
+color:#e6edf3;
+overflow-x:hidden;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px 18px;
+background:#111827;
+border-bottom:1px solid #1f2937;
+position:sticky;
+top:0;
+}
+
+.navbar a{
+color:#58a6ff;
+text-decoration:none;
+margin-right:12px;
+font-weight:600;
+padding:6px 10px;
+border-radius:6px;
+}
+
+.navbar a:hover{background:#238636;color:white;}
+.active{background:#58a6ff !important;color:white !important;}
+
+.card{
+margin:20px auto;
+width:85%;
+padding:20px;
+background:#111827;
+border-radius:12px;
+border:1px solid #1f2937;
+text-align:center;
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+width:85%;
+margin:auto;
+}
+
+.box{
+background:#111827;
+padding:20px;
+border-radius:12px;
+border:1px solid #1f2937;
+}
+
+.pulse{
+width:10px;
+height:10px;
+background:red;
+border-radius:50%;
+display:inline-block;
+animation:blink 1s infinite;
+}
+
+@keyframes blink{50%{opacity:0.2;}}
+
+.score{
+font-size:45px;
+color:#58a6ff;
+}
+
+.status{
+font-size:18px;
+margin-top:10px;
+font-weight:bold;
+}
+
+.safe{color:#22c55e;}
+.medium{color:#eab308;}
+.threat{color:#f97316;}
+.high{color:#ef4444;}
+
+#events{
+height:300px;
+overflow-y:auto;
+border:1px solid #1f2937;
+padding:10px;
+border-radius:8px;
+background:#0b0f19;
+}
+
+#events div{
+padding:6px;
+border-bottom:1px solid #1f2937;
+font-size:13px;
+}
+
 </style>
+
 </head>
 
 <body>
 
+<nav class="navbar">
+  <div>
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/scan" class="active">Live Scan</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/about">About</a>
+  </div>
+</nav>
+
 <div class="card">
-<h2>⚡ LIVE SCAN</h2>
-<h3 id="status">STATUS: -</h3>
-<h1 id="score">0</h1>
+<h2>⚡ Live Threat Scanner</h2>
+<p><span class="pulse"></span> Real-time SOC Monitoring Active</p>
+
+<h3 id="url">URL: -</h3>
+<div id="status" class="status">STATUS: -</div>
+<div class="score" id="score">0</div>
 <h4 id="time"></h4>
 </div>
 
+<div class="grid">
+
 <div class="box">
+<h3>📊 Threat Score Timeline</h3>
 <canvas id="chart"></canvas>
 </div>
 
 <div class="box">
-<h3>EVENTS</h3>
+<h3>🔥 Live SOC Events</h3>
 <div id="events"></div>
+</div>
+
 </div>
 
 <script>
 
-let chart = new Chart(document.getElementById("chart"), {
-type:"line",
-data:{
-labels:[],
-datasets:[{label:"Score",data:[],borderColor:"red"}]
-},
-options:{animation:false}
+let chart = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Threat Score',
+            data: [],
+            borderColor: '#58a6ff',
+            tension: 0.4
+        }]
+    },
+    options: {
+        animation: false,
+        scales: { y: { min: 0, max: 100 } }
+    }
 });
 
-function getStatus(s){
-if(s<30) return "SAFE";
-if(s<50) return "MEDIUM";
-if(s<60) return "THREAT";
-return "HIGH";
+function getStatus(score){
+    if(score < 30) return ["SAFE","safe"];
+    if(score < 50) return ["MEDIUM RISK","medium"];
+    if(score < 60) return ["THREAT ALERT","threat"];
+    return ["HIGH RISK","high"];
 }
 
-function add(e){
-let d=document.createElement("div");
-d.innerHTML=e;
-document.getElementById("events").prepend(d);
+function addEvent(msg){
+    if(!msg) return;
+    let div = document.createElement("div");
+    div.innerHTML = "🛡 " + msg;
+    document.getElementById("events").prepend(div);
 }
 
 function scan(){
 
 fetch("/api/continuous-scan")
-.then(r=>r.json())
-.then(d=>{
+.then(r => r.json())
+.then(data => {
 
-document.getElementById("score").innerText=d.score;
-document.getElementById("status").innerText=getStatus(d.score);
-document.getElementById("time").innerText=d.time;
+    let score = data.score || 0;
+    let [status, cls] = getStatus(score);
 
-chart.data.labels.push(d.time);
-chart.data.datasets[0].data.push(d.score);
+    document.getElementById("url").innerText = "URL: Scanning Network Traffic";
+    document.getElementById("status").innerHTML =
+        "STATUS: <span class='" + cls + "'>" + status + "</span>";
 
-if(chart.data.labels.length>15){
-chart.data.labels.shift();
-chart.data.datasets[0].data.shift();
-}
+    document.getElementById("score").innerText = score;
+    document.getElementById("time").innerText =
+        new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" });
 
-chart.update();
-add(d.event);
+    chart.data.labels.push(new Date().toLocaleTimeString());
+    chart.data.datasets[0].data.push(score);
+
+    if(chart.data.labels.length > 20){
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+    }
+
+    chart.update();
+
+    addEvent(data.event || "Scan activity detected");
+
 });
 }
 
-setInterval(scan,1000);
-</script>
+setInterval(scan, 1200);
+scan();
 
-</body>
-</html><!DOCTYPE html>
-<html>
-<head>
-<title>Live Scan</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body{background:#0b0f19;color:white;font-family:Segoe UI;}
-.card{padding:20px;margin:20px;background:#111827;border-radius:10px;}
-.box{padding:20px;background:#111827;margin:10px;border-radius:10px;}
-</style>
-</head>
-
-<body>
-
-<div class="card">
-<h2>⚡ LIVE SCAN</h2>
-<h3 id="status">STATUS: -</h3>
-<h1 id="score">0</h1>
-<h4 id="time"></h4>
-</div>
-
-<div class="box">
-<canvas id="chart"></canvas>
-</div>
-
-<div class="box">
-<h3>EVENTS</h3>
-<div id="events"></div>
-</div>
-
-<script>
-
-let chart = new Chart(document.getElementById("chart"), {
-type:"line",
-data:{
-labels:[],
-datasets:[{label:"Score",data:[],borderColor:"red"}]
-},
-options:{animation:false}
-});
-
-function getStatus(s){
-if(s<30) return "SAFE";
-if(s<50) return "MEDIUM";
-if(s<60) return "THREAT";
-return "HIGH";
-}
-
-function add(e){
-let d=document.createElement("div");
-d.innerHTML=e;
-document.getElementById("events").prepend(d);
-}
-
-function scan(){
-
-fetch("/api/continuous-scan")
-.then(r=>r.json())
-.then(d=>{
-
-document.getElementById("score").innerText=d.score;
-document.getElementById("status").innerText=getStatus(d.score);
-document.getElementById("time").innerText=d.time;
-
-chart.data.labels.push(d.time);
-chart.data.datasets[0].data.push(d.score);
-
-if(chart.data.labels.length>15){
-chart.data.labels.shift();
-chart.data.datasets[0].data.shift();
-}
-
-chart.update();
-add(d.event);
-});
-}
-
-setInterval(scan,1000);
 </script>
 
 </body>
