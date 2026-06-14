@@ -153,72 +153,78 @@ def continuous_scan():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
+# ================= USERS FILE =================
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
+
+
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+
+    try:
+        with open(USERS_FILE, "r") as f:
+            data = f.read().strip()
+            return json.loads(data) if data else []
+    except:
+        return []
+
+
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
+
+# ================= REGISTER =================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        users = load_users()
 
-        new_user = {
-            "name": request.form.get("name"),
-            "email": request.form.get("email"),
-            "password": request.form.get("password")
-        }
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
 
-        users = []
+        # prevent overwrite / duplicates
+        for u in users:
+            if u["email"] == email:
+                return "User already exists"
 
-        try:
-            with open("users.json", "r") as f:
-                content = f.read().strip()
-                if content:
-                    users = json.loads(content)
-        except:
-            users = []
+        users.append({
+            "name": name,
+            "email": email,
+            "password": password
+        })
 
-        if not isinstance(users, list):
-            users = []
-
-        users.append(new_user)
-
-        with open("users.json", "w") as f:
-            json.dump(users, f, indent=4)
-
+        save_users(users)
         return redirect("/login")
 
     return render_template("register.html")
 
 
+# ================= LOGIN =================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-
         email = request.form.get("email")
         password = request.form.get("password")
 
-        try:
-            with open("users.json", "r") as f:
-                users = json.load(f)
-        except:
-            users = []
+        users = load_users()
 
         for u in users:
             if u["email"] == email and u["password"] == password:
                 session["user"] = email
                 return redirect("/dashboard")
 
-        return "Invalid credentials"
+        return "Invalid Credentials"
 
     return render_template("login.html")
 
 
-
-
-
-
-
+# ================= LOGOUT =================
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
-
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
