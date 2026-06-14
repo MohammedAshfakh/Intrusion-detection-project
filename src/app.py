@@ -12,9 +12,9 @@ app = Flask(
 )
 
 # ================= STATE =================
-RISK = {"score": 20, "status": "SAFE"}
+CURRENT_RISK = {"score": 25, "status": "SAFE"}
 
-STATS = {
+VISITOR_STATS = {
     "total_hits": 120,
     "countries": {
         "India": 45,
@@ -24,6 +24,7 @@ STATS = {
         "UK": 10
     }
 }
+
 
 # ================= ROUTES =================
 @app.route("/")
@@ -48,7 +49,7 @@ def about():
 
 
 # ================= HELPERS =================
-def fix_url(url):
+def normalize(url):
     if not url:
         return None
     if not url.startswith(("http://", "https://")):
@@ -57,23 +58,22 @@ def fix_url(url):
 
 def valid(url):
     try:
-        d = urlparse(url).netloc
-        return "." in d
+        return "." in urlparse(url).netloc
     except:
         return False
 
 
-# ================= ANALYZE =================
+# ================= ANALYZE (DASHBOARD CORE) =================
 @app.route("/api/analyze")
 def analyze():
-    global RISK
+    global CURRENT_RISK
 
-    url = fix_url(request.args.get("url", ""))
+    url = normalize(request.args.get("url", ""))
 
     if not url or not valid(url):
-        return jsonify({"score": 0, "status": "INVALID", "issues": []})
+        return jsonify({"score": 0, "status": "INVALID URL", "issues": []})
 
-    score = random.randint(10, 60)
+    score = random.randint(20, 60)
 
     if "login" in url.lower():
         score += 10
@@ -93,7 +93,7 @@ def analyze():
     else:
         status = "HIGH RISK"
 
-    RISK = {"score": score, "status": status}
+    CURRENT_RISK = {"score": score, "status": status}
 
     return jsonify({
         "score": score,
@@ -102,36 +102,55 @@ def analyze():
     })
 
 
-# ================= LIVE SCAN (STABLE) =================
-@app.route("/api/continuous-scan")
-def continuous_scan():
-    base = RISK["score"]
+# ================= 🔥 DASHBOARD LIVE FEED (RESTORED OLD STYLE) =================
+@app.route("/api/live-event")
+def live_event():
 
-    score = base + random.randint(-20, 20)
-    score = max(0, min(100, score))
+    base = CURRENT_RISK["score"]
+    score = max(0, min(100, base + random.randint(-15, 15)))
 
-    events = [
-        "DNS OK",
-        "Firewall Active",
-        "Packet Inspection Running",
-        "Bot Check Running",
-        "No Anomaly Detected",
-        "Traffic Monitoring Active",
-        "System Stable"
-    ]
+    safe = ["No anomaly detected", "System stable", "Traffic normal"]
+    medium = ["Bot activity detected", "Unusual traffic spike"]
+    threat = ["Suspicious payload", "Login anomaly detected"]
+    high = ["CRITICAL ALERT", "Possible intrusion detected"]
 
     if score < 30:
-        status = "SAFE"
+        status = "safe"
+        msg = random.choice(safe)
     elif score < 50:
-        status = "MEDIUM"
+        status = "medium"
+        msg = random.choice(medium)
     elif score < 70:
-        status = "THREAT"
+        status = "threat"
+        msg = random.choice(threat)
     else:
-        status = "HIGH RISK"
+        status = "high"
+        msg = random.choice(high)
+
+    return jsonify({
+        "type": status,
+        "message": msg,
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "score": score
+    })
+
+
+# ================= SCAN PAGE ONLY =================
+@app.route("/api/continuous-scan")
+def continuous_scan():
+
+    score = random.randint(10, 95)
+
+    events = [
+        "Packet inspection running",
+        "Firewall check active",
+        "DNS monitoring active",
+        "Traffic scan running",
+        "Bot detection active"
+    ]
 
     return jsonify({
         "score": score,
-        "status": status,
         "event": random.choice(events),
         "time": datetime.now().strftime("%H:%M:%S")
     })
@@ -140,12 +159,14 @@ def continuous_scan():
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
-    STATS["total_hits"] += random.randint(1, 4)
+    global VISITOR_STATS
 
-    for c in STATS["countries"]:
-        STATS["countries"][c] += random.randint(0, 2)
+    VISITOR_STATS["total_hits"] += random.randint(1, 4)
 
-    return jsonify(STATS)
+    for c in VISITOR_STATS["countries"]:
+        VISITOR_STATS["countries"][c] += random.randint(0, 2)
+
+    return jsonify(VISITOR_STATS)
 
 
 if __name__ == "__main__":
