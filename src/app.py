@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, session, request, jsonify
 import os, random
 from datetime import datetime
 from urllib.parse import urlparse
@@ -165,31 +165,25 @@ def register():
 
         users = []
 
-        # 🔥 SAFE LOAD (prevents crash)
         try:
-            if os.path.exists("users.json"):
-                with open("users.json", "r") as f:
-                    content = f.read().strip()
-                    if content:
-                        users = json.loads(content)
+            with open("users.json", "r") as f:
+                content = f.read().strip()
+                if content:
+                    users = json.loads(content)
         except:
             users = []
 
-        # ensure it's always a list
         if not isinstance(users, list):
             users = []
 
-        # append new user
         users.append(new_user)
 
-        # safe write
         with open("users.json", "w") as f:
             json.dump(users, f, indent=4)
 
         return redirect("/login")
 
     return render_template("register.html")
-
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -224,7 +218,6 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
-
 
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
