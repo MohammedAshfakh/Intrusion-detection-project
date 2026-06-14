@@ -7,7 +7,6 @@
 
 <style>
 
-/* ================= BASE ================= */
 body{
 margin:0;
 font-family:Segoe UI;
@@ -16,7 +15,6 @@ color:#e6edf3;
 overflow-x:hidden;
 }
 
-/* ================= NAV ================= */
 .navbar{
 display:flex;
 justify-content:space-between;
@@ -26,7 +24,6 @@ background:#111827;
 border-bottom:1px solid #1f2937;
 position:sticky;
 top:0;
-z-index:1000;
 }
 
 .navbar a{
@@ -38,18 +35,9 @@ padding:6px 10px;
 border-radius:6px;
 }
 
-.navbar a:hover{
-background:#238636;
-color:white;
-}
+.navbar a:hover{background:#238636;color:white;}
+.active{background:#58a6ff !important;color:white !important;}
 
-/* ACTIVE PAGE */
-.active{
-background:#58a6ff !important;
-color:white !important;
-}
-
-/* ================= HEADER CARD ================= */
 .card{
 margin:20px auto;
 width:85%;
@@ -58,10 +46,8 @@ background:#111827;
 border-radius:12px;
 border:1px solid #1f2937;
 text-align:center;
-box-shadow:0 0 20px rgba(88,166,255,0.15);
 }
 
-/* ================= GRID ================= */
 .grid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -70,7 +56,6 @@ width:85%;
 margin:auto;
 }
 
-/* ================= BOX ================= */
 .box{
 background:#111827;
 padding:20px;
@@ -78,7 +63,6 @@ border-radius:12px;
 border:1px solid #1f2937;
 }
 
-/* ================= LIVE PULSE ================= */
 .pulse{
 width:10px;
 height:10px;
@@ -88,22 +72,24 @@ display:inline-block;
 animation:blink 1s infinite;
 }
 
-@keyframes blink{
-50%{opacity:0.2;}
-}
+@keyframes blink{50%{opacity:0.2;}}
 
-/* ================= TEXT ================= */
 .score{
-font-size:40px;
+font-size:45px;
 color:#58a6ff;
 }
 
 .status{
-font-size:20px;
+font-size:18px;
 margin-top:10px;
+font-weight:bold;
 }
 
-/* ================= EVENT LOG ================= */
+.safe{color:#22c55e;}
+.medium{color:#eab308;}
+.threat{color:#f97316;}
+.high{color:#ef4444;}
+
 #events{
 height:300px;
 overflow-y:auto;
@@ -125,42 +111,33 @@ font-size:13px;
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
 <nav class="navbar">
   <div>
     <a href="/">Home</a>
     <a href="/dashboard">Dashboard</a>
-    <a href="/scan">Live Scan</a>
+    <a href="/scan" class="active">Live Scan</a>
     <a href="/analytics">Analytics</a>
     <a href="/about">About</a>
   </div>
-
-  <div>
-    <a href="/logout">Logout</a>
-  </div>
 </nav>
 
-<!-- ================= HEADER ================= -->
 <div class="card">
 <h2>⚡ Live Threat Scanner</h2>
 <p><span class="pulse"></span> Real-time SOC Monitoring Active</p>
 
 <h3 id="url">URL: -</h3>
-<div class="status" id="status">STATUS: -</div>
+<div id="status" class="status">STATUS: -</div>
 <div class="score" id="score">0</div>
 <h4 id="time"></h4>
 </div>
 
-<!-- ================= GRID ================= -->
 <div class="grid">
 
-<!-- GRAPH -->
 <div class="box">
 <h3>📊 Threat Score Timeline</h3>
 <canvas id="chart"></canvas>
 </div>
 
-<!-- EVENTS -->
 <div class="box">
 <h3>🔥 Live SOC Events</h3>
 <div id="events"></div>
@@ -170,9 +147,7 @@ font-size:13px;
 
 <script>
 
-let ctx = document.getElementById('chart').getContext('2d');
-
-let chart = new Chart(ctx, {
+let chart = new Chart(document.getElementById('chart'), {
     type: 'line',
     data: {
         labels: [],
@@ -180,78 +155,66 @@ let chart = new Chart(ctx, {
             label: 'Threat Score',
             data: [],
             borderColor: '#58a6ff',
-            backgroundColor: 'rgba(88,166,255,0.1)',
             tension: 0.4
         }]
     },
     options: {
-        responsive: true,
         animation: false,
-        scales: {
-            y: {
-                min: 0,
-                max: 100
-            }
-        }
+        scales: { y: { min: 0, max: 100 } }
     }
 });
 
-/* ================= EVENT ================= */
+function getStatus(score){
+    if(score < 30) return ["SAFE","safe"];
+    if(score < 50) return ["MEDIUM RISK","medium"];
+    if(score < 60) return ["THREAT ALERT","threat"];
+    return ["HIGH RISK","high"];
+}
+
 function addEvent(msg){
     if(!msg) return;
-
     let div = document.createElement("div");
     div.innerHTML = "🛡 " + msg;
     document.getElementById("events").prepend(div);
 }
 
-/* ================= SCAN ================= */
 function scan(){
 
 fetch("/api/continuous-scan")
 .then(r => r.json())
 .then(data => {
 
-    data = data || {};
+    let score = data.score || 0;
+    let [status, cls] = getStatus(score);
 
-    document.getElementById("url").innerText = "URL: " + (data.url || "-");
-    document.getElementById("status").innerText = "STATUS: " + (data.status || "-");
-    document.getElementById("score").innerText = data.score || 0;
-    document.getElementById("time").innerText = data.time || "";
+    document.getElementById("url").innerText = "URL: Scanning Network Traffic";
+    document.getElementById("status").innerHTML =
+        "STATUS: <span class='" + cls + "'>" + status + "</span>";
 
-    let time = new Date().toLocaleTimeString();
+    document.getElementById("score").innerText = score;
+    document.getElementById("time").innerText =
+        new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" });
 
-    chart.data.labels.push(time);
-    chart.data.datasets[0].data.push(data.score || 0);
+    chart.data.labels.push(new Date().toLocaleTimeString());
+    chart.data.datasets[0].data.push(score);
 
-    if(chart.data.labels.length > 15){
+    if(chart.data.labels.length > 20){
         chart.data.labels.shift();
         chart.data.datasets[0].data.shift();
     }
 
     chart.update();
 
-    addEvent(data.event || "Live scan update received");
+    addEvent(data.event || "Scan activity detected");
 
 });
-
 }
 
-setInterval(scan, 1500);
+setInterval(scan, 1200);
 scan();
 
 </script>
 
-<!-- ACTIVE PAGE HIGHLIGHT -->
-<script>
-const path = window.location.pathname;
-
-document.querySelectorAll(".navbar a").forEach(a => {
-    if(a.getAttribute("href") === path){
-        a.classList.add("active");
-    }
-});
-</script>
-
 </body>
 </html>
+~
