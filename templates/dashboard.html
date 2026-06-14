@@ -127,7 +127,7 @@ color:#58a6ff;
 
 <script>
 
-let currentURL = "";
+let currentURL = "active";
 let feedStarted = false;
 
 /* ================= CHART ================= */
@@ -161,7 +161,7 @@ y: { min: 0, max: 100 }
 function analyze(){
 
 let url = document.getElementById("url").value;
-currentURL = url;
+currentURL = url || "active";
 
 fetch("/api/analyze?url=" + encodeURIComponent(url))
 .then(r => r.json())
@@ -170,10 +170,6 @@ fetch("/api/analyze?url=" + encodeURIComponent(url))
 document.getElementById("score").innerText = data.score + "%";
 
 let badge = document.getElementById("badge");
-
-let cls = "safe-b";
-if (data.status.includes("MEDIUM")) cls = "med-b";
-if (data.status.includes("HIGH")) cls = "high-b";
 
 badge.innerHTML = `<b>${data.status}</b>`;
 
@@ -186,7 +182,7 @@ html += "</ul>";
 }
 document.getElementById("result").innerHTML = html;
 
-/* start feed only once */
+/* start feed */
 if (!feedStarted) {
 feedStarted = true;
 setInterval(feed, 1000);
@@ -198,15 +194,19 @@ setInterval(feed, 1000);
 /* ================= LIVE FEED ================= */
 function feed(){
 
-if(!currentURL) return;
+// ❌ REMOVED BLOCKING CONDITION (MAIN BUG FIX)
+// if(!currentURL) return;
 
 fetch("/api/live-event")
 .then(r => r.json())
 .then(data => {
 
 let div = document.createElement("div");
-div.className = data.type === "threat" ? "log threat" : "log safe";
-div.innerText = `[${data.time}] ${data.message}`;
+
+div.className = data.status.includes("HIGH") ? "log threat" : "log safe";
+
+div.innerText = `[${data.time}] ${data.event}`;
+
 document.getElementById("feed").prepend(div);
 
 /* graph update */
@@ -225,6 +225,5 @@ chart.update();
 }
 
 </script>
-
 </body>
 </html>
