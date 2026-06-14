@@ -7,7 +7,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-
+@media(max-width:768px){
+.nav-links{
+    display:none;
+    flex-direction:column;
+}
+}
 /* ================= BASE ================= */
 body{
 margin:0;
@@ -309,14 +314,19 @@ setInterval(load, 2000);
 </script>
 
 <!-- ACTIVE PAGE HIGHLIGHT -->
+
 <script>
 const path = window.location.pathname;
 
 document.querySelectorAll(".nav-links a").forEach(a => {
     if (a.getAttribute("href") === path) {
-        a.classList.add("active");
+        a.style.background = "#238636";
+        a.style.color = "white";
+        a.style.borderRadius = "6px";
+        a.style.padding = "6px 10px";
     }
 });
 </script>
+
 </body>
 </html>
