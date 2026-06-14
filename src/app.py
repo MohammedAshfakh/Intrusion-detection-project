@@ -164,14 +164,23 @@ def analyze():
     global CURRENT_URL, CURRENT_RISK, VISITOR_STATS
 
     url = request.args.get("url", "").strip()
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+
+    if not url or "." not in parsed.netloc and not url.startswith("http"):
+        return jsonify({
+            "status": "INVALID URL",
+            "score": 0,
+            "message": "Please enter a valid domain like google.com"
+        })
 
     if not url:
         return jsonify({
-            "status": "ERROR",
-            "score": 100,
-            "message": "Please enter a URL"
+            "status": "INVALID URL",
+            "score": 0,
+            "message": "Enter a valid or reachable domain"
         })
-
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
 
@@ -179,8 +188,12 @@ def analyze():
 
     # check if website exists
     try:
-        response = requests.get(url, timeout=5)
-
+        response = requests.get(
+            url,
+            timeout=5,
+            allow_redirects=True,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
         if response.status_code >= 400:
             return jsonify({
                 "status": "ERROR",
@@ -190,11 +203,10 @@ def analyze():
 
     except:
         return jsonify({
-            "status": "ERROR",
-            "score": 100,
-            "message": "Invalid URL or Website Not Found"
+            "status": "INVALID URL",
+            "score": 0,
+            "message": "Enter a valid or reachable domain"
         })
-
     VISITOR_STATS["total_hits"] += 1
 
     country = random.choice([
