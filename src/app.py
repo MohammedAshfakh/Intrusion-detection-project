@@ -1,5 +1,5 @@
 from flask import Flask, render_template, session, request, jsonify
-import os, random
+import json, os, random
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -154,6 +154,8 @@ def continuous_scan():
     })
 
 # ================= USERS FILE =================
+
+
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 
 
@@ -163,8 +165,7 @@ def load_users():
 
     try:
         with open(USERS_FILE, "r") as f:
-            data = f.read().strip()
-            return json.loads(data) if data else []
+            return json.load(f)
     except:
         return []
 
@@ -184,7 +185,7 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # prevent overwrite / duplicates
+        # prevent crash duplicates
         for u in users:
             if u["email"] == email:
                 return "User already exists"
@@ -205,17 +206,17 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        users = load_users()
+
         email = request.form.get("email")
         password = request.form.get("password")
-
-        users = load_users()
 
         for u in users:
             if u["email"] == email and u["password"] == password:
                 session["user"] = email
                 return redirect("/dashboard")
 
-        return "Invalid Credentials"
+        return "Invalid credentials"
 
     return render_template("login.html")
 
@@ -225,6 +226,8 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
+
+
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
