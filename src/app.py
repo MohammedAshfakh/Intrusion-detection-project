@@ -204,6 +204,7 @@ def analyze():
 
     CURRENT_URL = url
     ACTIVE_SCAN_URL = url
+    SCAN_STATE["score"] = score
 
     VISITOR_STATS["total_hits"] += 1
     country = random.choice(["India", "USA", "Germany", "UK", "Japan"])
@@ -272,7 +273,61 @@ def live_event():
         "score": score,
         "url": ACTIVE_SCAN_URL,
         "time": datetime.now().strftime("%H:%M:%S"),
-        "event": random.choice(events)
+        "event": random.choice(events) if events else "System Active"
+    })
+
+
+
+@app.route("/api/continuous-scan")
+def continuous_scan():
+    global SCAN_STATE
+
+    # smooth fluctuation engine
+    SCAN_STATE["score"] += random.randint(-12, 12)
+    SCAN_STATE["score"] = max(0, min(100, SCAN_STATE["score"]))
+
+    score = SCAN_STATE["score"]
+
+    # severity engine
+    if score < 30:
+        status = "SAFE"
+        events = [
+            "DNS OK",
+            "Firewall Stable",
+            "No Threat Found",
+            "Network Clean"
+        ]
+
+    elif score < 50:
+        status = "MEDIUM RISK"
+        events = [
+            "Suspicious traffic detected",
+            "Login anomaly detected",
+            "Port scan activity"
+        ]
+
+    elif score < 60:
+        status = "THREAT"
+        events = [
+            "Bot activity detected",
+            "Malicious pattern found",
+            "Unauthorized request blocked"
+        ]
+
+    else:
+        status = "HIGH RISK"
+        events = [
+            "CRITICAL ATTACK DETECTED",
+            "Data exfiltration attempt",
+            "Ransomware behavior detected"
+        ]
+
+    return jsonify({
+        "score": score,
+        "status": status,
+        "event": random.choice(events),
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "url": SCAN_STATE["url"]
     })
 
 
