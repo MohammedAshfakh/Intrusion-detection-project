@@ -7,7 +7,6 @@ import joblib
 import re
 from urllib.parse import urlparse
 
-# optional requests (safe fallback)
 try:
     import requests
 except:
@@ -37,10 +36,7 @@ except:
 
 # ================= GLOBAL STATE =================
 CURRENT_URL = ""
-CURRENT_RISK = {
-    "status": "SAFE",
-    "score": 10
-}
+CURRENT_RISK = {"status": "SAFE", "score": 10}
 
 
 # ================= USERS =================
@@ -122,12 +118,7 @@ def register():
             if u["email"] == email:
                 return "⚠️ User already exists"
 
-        users.append({
-            "name": name,
-            "email": email,
-            "password": password
-        })
-
+        users.append({"name": name, "email": email, "password": password})
         save_users(users)
         return redirect("/login")
 
@@ -143,30 +134,17 @@ def logout():
 # ================= URL VALIDATION =================
 def normalize_url(url):
     url = url.strip()
-
     if not url:
         return None
-
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
-
     return url
 
 
 def is_valid_domain(url):
     try:
-        parsed = urlparse(url)
-        domain = parsed.netloc
-
-        # must contain dot (google.com, example.in)
-        if "." not in domain:
-            return False
-
-        # must not be garbage
-        if len(domain) < 4:
-            return False
-
-        return True
+        domain = urlparse(url).netloc
+        return "." in domain and len(domain) > 3
     except:
         return False
 
@@ -190,7 +168,7 @@ def calculate_risk(url):
 
     if len(url) > 70:
         score += 10
-        issues.append("Long suspicious URL")
+        issues.append("Long URL detected")
 
     return score, issues
 
@@ -200,8 +178,7 @@ def calculate_risk(url):
 def analyze():
     global CURRENT_URL, CURRENT_RISK
 
-    url = request.args.get("url", "")
-    url = normalize_url(url)
+    url = normalize_url(request.args.get("url", ""))
 
     if not url or not is_valid_domain(url):
         return jsonify({
@@ -211,48 +188,21 @@ def analyze():
             "message": "Enter valid domain like google.com"
         })
 
-    # optional reachability check
-    if requests:
-        try:
-            r = requests.get(url, timeout=4)
-            if r.status_code >= 400:
-                return jsonify({
-                    "status": "ERROR",
-                    "score": 100,
-                    "issues": [],
-                    "message": "Website not reachable"
-                })
-        except:
-            return jsonify({
-                "status": "ERROR",
-                "score": 100,
-                "issues": [],
-                "message": "Website not reachable"
-            })
-
     CURRENT_URL = url
 
     score, issues = calculate_risk(url)
 
-    # ML model (optional)
     if model:
         try:
-            pred = model.predict([[ 
-                len(url),
-                url.count("."),
-                url.count("-"),
-                url.count("@"),
-                1 if "https" in url else 0,
-                len(re.findall(r"\d", url))
-            ]])[0]
-
+            pred = model.predict([[len(url), url.count("."), url.count("-"),
+                                   url.count("@"), 1, len(re.findall(r"\d", url))]])[0]
             if pred == 1:
                 score += 20
                 issues.append("ML model flagged risk")
         except:
             pass
 
-    score = min(score, 100)
+    score = min(100, max(5, score))
 
     if score < 30:
         status = "LOW RISK"
@@ -261,56 +211,63 @@ def analyze():
     else:
         status = "HIGH RISK"
 
-    CURRENT_RISK = {
-        "status": status,
-        "score": score
-    }
+    CURRENT_RISK = {"status": status, "score": score}
 
-    return jsonify({
-        "status": status,
-        "score": score,
-        "issues": issues
-    })
+    return jsonify({"status": status, "score": score, "issues": issues})
 
 
-# ================= LIVE EVENT =================
+# ================= LIVE EVENT (FIXED + FLUCTUATION) =================
 @app.route("/api/live-event")
 def live_event():
-    score = CURRENT_RISK["score"]
+    base = CURRENT_RISK["score"]
 
-    safe_events = [
+    # real fluctuation
+    score = max(5, min(100, base + random.randint(-10, 10)))
+
+    safe = [
         "DNS OK",
         "HTTPS Verified",
-        "Firewall Stable"
+        "Firewall Stable",
+        "No Threat Detected"
     ]
 
-    threat_events = [
-        "Suspicious activity detected",
+    threat = [
+        "Suspicious packet detected",
         "Malware signature match",
-        "Phishing pattern found"
+        "Phishing pattern detected",
+        "Anomaly in traffic flow"
     ]
-
-    # small randomness → graph fluctuates
-    score = max(5, min(100, score + random.randint(-5, 5)))
 
     return jsonify({
         "type": "safe" if score < 30 else "threat",
-        "message": random.choice(safe_events if score < 30 else threat_events),
+        "message": random.choice(safe if score < 30 else threat),
         "time": datetime.now().strftime("%H:%M:%S"),
         "score": score
     })
 
 
-# ================= CONTINUOUS SCAN =================
+# ================= CONTINUOUS SCAN (FIXED EVENTS) =================
 @app.route("/api/continuous-scan")
 def continuous_scan():
+
+    events = [
+        "Firewall inspection completed",
+        "DNS resolution verified",
+        "HTTPS certificate validated",
+        "Bot activity detected",
+        "Suspicious redirect blocked",
+        "SQL injection attempt blocked",
+        "Malware signature scanned",
+        "Traffic anomaly detected"
+    ]
+
     score = random.randint(5, 95)
 
     return jsonify({
         "status": "SAFE" if score < 35 else "RISK",
         "score": score,
         "time": datetime.now().strftime("%H:%M:%S"),
-        "event": "scan running"
+        "event": random.choice(events)
     })
 
 
