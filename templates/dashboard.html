@@ -124,24 +124,83 @@ border-radius:10px;
 font-size:50px;
 color:#58a6ff;
 }
+
+nav{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px;
+background:#111827;
+}
+
+.nav-links{
+display:flex;
+gap:15px;
+}
+
+.nav-links a{
+color:#58a6ff;
+text-decoration:none;
+}
+
+.menu-btn{
+display:none;
+background:none;
+border:none;
+font-size:28px;
+color:white;
+cursor:pointer;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+.menu-btn{
+display:block;
+}
+
+.nav-links{
+display:none;
+position:absolute;
+top:60px;
+left:0;
+width:100%;
+background:#111827;
+flex-direction:column;
+padding:10px;
+}
+
+.nav-links.show{
+display:flex;
+}
+
+.nav-links a{
+padding:10px;
+border-bottom:1px solid #1f2937;
+}
+}
 </style>
 </head>
-
+<script>
+function toggleMenu(){
+document.getElementById("mobileMenu").classList.toggle("show");
+}
+</script>
 <body>
 
 <nav>
-<div>
-<nav>
-<div>
+<div class="logo">🛡 AI SOC</div>
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+
+<div id="mobileMenu" class="nav-links">
 <a href="/">Control Panel</a>
 <a href="/dashboard">Security Dashboard</a>
 <a href="/scan">Threat Scanner</a>
 <a href="/analytics">Intelligence Hub</a>
 <a href="/about">Documentation</a>
 </div>
-</nav></div>
 </nav>
-
 <div class="container">
 
 <div class="card">
