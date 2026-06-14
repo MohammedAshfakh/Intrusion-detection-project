@@ -206,46 +206,47 @@ color:#9ca3af;
 </div>
 
 </div>
+
 <script>
 let currentURL = "";
+let intervalStarted = false;
 
 /* ================= ANALYZE ================= */
-function analyze(){
+function analyze() {
+    let url = document.getElementById("url").value;
+    currentURL = url;
 
-let url = document.getElementById("url").value;
-currentURL = url;
+    fetch("/api/analyze?url=" + encodeURIComponent(url))
+    .then(r => r.json())
+    .then(data => {
 
-fetch("/api/analyze?url=" + encodeURIComponent(url))
-.then(r => r.json())
-.then(data => {
+        document.getElementById("score").innerText = data.score + "%";
 
-    document.getElementById("score").innerText = data.score + "%";
+        let badge = document.getElementById("badge");
 
-    /* badge */
-    let badge = document.getElementById("badge");
+        let cls = "safe-b";
+        if (data.status.includes("MEDIUM")) cls = "med-b";
+        if (data.status.includes("HIGH")) cls = "high-b";
 
-    let cls = "safe-b";
-    if (data.status.includes("MEDIUM")) cls = "med-b";
-    if (data.status.includes("HIGH")) cls = "high-b";
+        badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
 
-    badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
+        let html = "";
 
-    /* issues */
-    let html = "";
+        if (data.issues && data.issues.length) {
+            html += "<br><b>Detected Issues:</b><ul>";
+            data.issues.forEach(i => {
+                html += `<li>${i}</li>`;
+            });
+            html += "</ul>";
+        }
 
-    if (data.issues && data.issues.length) {
-        html += "<br><b>Detected Issues:</b><ul>";
-        data.issues.forEach(i => {
-            html += `<li>${i}</li>`;
-        });
-        html += "</ul>";
-    }
+        document.getElementById("result").innerHTML = html;
 
-    document.getElementById("result").innerHTML = html;
-
-    /* START FEED + GRAPH ONLY AFTER SCAN */
-    feed();
-});
+        if (!intervalStarted) {
+            setInterval(feed, 1000);
+            intervalStarted = true;
+        }
+    });
 }
 
 /* ================= CHART ================= */
@@ -274,35 +275,28 @@ y: { min: 0, max: 100 }
 }
 });
 
-/* ================= LIVE FEED ================= */
-function feed(){
+/* ================= FEED ================= */
+function feed() {
+    if (!currentURL) return;
 
-if(!currentURL) return;
+    fetch("/api/live-event")
+    .then(r => r.json())
+    .then(data => {
 
-fetch("/api/live-event")
-.then(r => r.json())
-.then(data => {
+        let div = document.createElement("div");
+        div.className = data.type === "threat" ? "log threat" : "log safe";
+        div.innerText = `[${data.time}] ${data.message}`;
+        document.getElementById("feed").prepend(div);
 
-    let div = document.createElement("div");
-    div.className = data.type === "threat" ? "log threat" : "log safe";
-    div.innerText = `[${data.time}] ${data.message}`;
-    document.getElementById("feed").prepend(div);
+        labels.push(data.time);
+        values.push(data.score);
 
-    let score = data.score;
+        if (labels.length > 20) {
+            labels.shift();
+            values.shift();
+        }
 
-    labels.push(new Date().toLocaleTimeString());
-    values.push(score);
-
-    if (labels.length > 20) {
-        labels.shift();
-        values.shift();
-    }
-
-    chart.update();
-});
+        chart.update();
+    });
 }
-
-/* RUN ONCE EVERY SECOND */
-setInterval(feed, 1000);
-
 </script>
