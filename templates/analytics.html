@@ -127,34 +127,58 @@ color:white;
 cursor:pointer;
 }
 
-/* MOBILE */
+/* ================= MOBILE FIX FOR INTELLIGENT HUB ================= */
+
 @media(max-width:768px){
 
-.menu-btn{
-display:block;
+.container{
+    width: 95%;
+    padding: 10px;
 }
 
-.nav-links{
-display:none;
-position:absolute;
-top:60px;
-left:0;
-width:100%;
-background:#111827;
-flex-direction:column;
-padding:10px;
+.grid{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.nav-links.show{
-display:flex;
+.card{
+    padding: 15px;
+    border-radius: 10px;
 }
 
-.nav-links a{
-padding:10px;
-border-bottom:1px solid #1f2937;
+h1, h2, h3{
+    font-size: 18px;
+}
+
+table{
+    width: 100%;
+    font-size: 13px;
+}
+
+canvas{
+    width: 100% !important;
+    height: auto !important;
+}
+
+.stats-box{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.geo-item{
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #1f2937;
+    font-size: 13px;
 }
 }
 
+canvas {
+    max-width: 100%;
+}
 </style>
 
 </head>
