@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, redirect, jsonify, session
-import os, json, random
+from flask import Flask, render_template, request, jsonify
+import os, random
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -11,15 +11,10 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 
-app.secret_key = "soc_ai_secret_key_123"
+# ================= STATE =================
+RISK = {"score": 20, "status": "SAFE"}
 
-
-# ================= GLOBAL STATE =================
-CURRENT_RISK = {"score": 20, "status": "SAFE"}
-
-
-# ================= ANALYTICS =================
-VISITOR_STATS = {
+STATS = {
     "total_hits": 120,
     "countries": {
         "India": 45,
@@ -30,41 +25,40 @@ VISITOR_STATS = {
     }
 }
 
-
 # ================= ROUTES =================
 @app.route("/")
 def home():
     return render_template("index.html")
 
-
 @app.route("/dashboard")
 def dashboard():
     return render_template("dashboard.html")
-
 
 @app.route("/scan")
 def scan():
     return render_template("scan.html")
 
-
 @app.route("/analytics")
 def analytics():
     return render_template("analytics.html")
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
-# ================= URL HELPERS =================
-def normalize(url):
+
+# ================= HELPERS =================
+def fix_url(url):
     if not url:
         return None
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
     return url
 
-
 def valid(url):
     try:
         d = urlparse(url).netloc
-        return "." in d and len(d) > 3
+        return "." in d
     except:
         return False
 
@@ -72,14 +66,14 @@ def valid(url):
 # ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
-    global CURRENT_RISK
+    global RISK
 
-    url = normalize(request.args.get("url", ""))
+    url = fix_url(request.args.get("url", ""))
 
     if not url or not valid(url):
-        return jsonify({"status": "INVALID URL", "score": 0, "issues": []})
+        return jsonify({"score": 0, "status": "INVALID", "issues": []})
 
-    score = random.randint(15, 60)
+    score = random.randint(10, 60)
 
     if "login" in url.lower():
         score += 10
@@ -94,15 +88,12 @@ def analyze():
         status = "SAFE"
     elif score < 50:
         status = "MEDIUM RISK"
-    elif score < 60:
+    elif score < 70:
         status = "THREAT"
     else:
         status = "HIGH RISK"
 
-    CURRENT_RISK = {
-        "score": score,
-        "status": status
-    }
+    RISK = {"score": score, "status": status}
 
     return jsonify({
         "score": score,
@@ -111,31 +102,31 @@ def analyze():
     })
 
 
-# ================= LIVE SCAN (SIMPLE & STABLE) =================
+# ================= LIVE SCAN (STABLE) =================
 @app.route("/api/continuous-scan")
 def continuous_scan():
+    base = RISK["score"]
 
-    base = CURRENT_RISK["score"]
-
-    score = base + random.randint(-15, 15)
+    score = base + random.randint(-20, 20)
     score = max(0, min(100, score))
 
     events = [
-        "DNS check OK",
-        "Traffic scanning active",
-        "Firewall monitoring",
-        "Packet inspection running",
-        "No anomaly detected",
-        "Bot scan completed",
-        "System stable"
+        "DNS OK",
+        "Firewall Active",
+        "Packet Inspection Running",
+        "Bot Check Running",
+        "No Anomaly Detected",
+        "Traffic Monitoring Active",
+        "System Stable"
     ]
 
-    status = "SAFE"
-    if score >= 30:
+    if score < 30:
+        status = "SAFE"
+    elif score < 50:
         status = "MEDIUM"
-    if score >= 50:
+    elif score < 70:
         status = "THREAT"
-    if score >= 70:
+    else:
         status = "HIGH RISK"
 
     return jsonify({
@@ -149,15 +140,13 @@ def continuous_scan():
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
+    STATS["total_hits"] += random.randint(1, 4)
 
-    VISITOR_STATS["total_hits"] += random.randint(1, 3)
+    for c in STATS["countries"]:
+        STATS["countries"][c] += random.randint(0, 2)
 
-    for c in VISITOR_STATS["countries"]:
-        VISITOR_STATS["countries"][c] += random.randint(0, 2)
-
-    return jsonify(VISITOR_STATS)
+    return jsonify(STATS)
 
 
-# ================= RUN =================
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
