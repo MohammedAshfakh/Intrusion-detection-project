@@ -179,6 +179,20 @@ canvas{
 canvas {
     max-width: 100%;
 }
+
+.nav-links.show{
+    display:flex;
+    flex-direction:column;
+    position:absolute;
+    top:60px;
+    right:10px;
+    background:#111827;
+    padding:10px;
+    border:1px solid #1f2937;
+    border-radius:10px;
+    width:200px;
+}
+
 </style>
 
 </head>
@@ -190,7 +204,7 @@ document.getElementById("mobileMenu").classList.toggle("show");
 <body>
 
 <!-- ================= NAVBAR ================= -->
-<nav>
+<nav class="navbar">
 <div class="logo">🛡 AI SOC</div>
 
 <button class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -204,6 +218,7 @@ document.getElementById("mobileMenu").classList.toggle("show");
 <a href="/logout">Logout</a>
 </div>
 </nav>
+
 <!-- ================= CONTENT ================= -->
 <div class="container scroll-box">
 
@@ -297,12 +312,11 @@ setInterval(load, 2000);
 <script>
 const path = window.location.pathname;
 
-document.querySelectorAll(".navbar a").forEach(a => {
-if(a.getAttribute("href") === path){
-a.classList.add("active");
-}
+document.querySelectorAll(".nav-links a").forEach(a => {
+    if (a.getAttribute("href") === path) {
+        a.classList.add("active");
+    }
 });
 </script>
-
 </body>
 </html>
