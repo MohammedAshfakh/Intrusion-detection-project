@@ -105,13 +105,12 @@ def analyze():
 # ================= 🔥 DASHBOARD LIVE FEED (RESTORED OLD STYLE) =================
 @app.route("/api/live-event")
 def live_event():
-
     base = CURRENT_RISK["score"]
     score = max(0, min(100, base + random.randint(-15, 15)))
 
     safe = ["No anomaly detected", "System stable", "Traffic normal"]
     medium = ["Bot activity detected", "Unusual traffic spike"]
-    threat = ["Suspicious payload", "Login anomaly detected"]
+    threat = ["Suspicious payload detected", "Login anomaly detected"]
     high = ["CRITICAL ALERT", "Possible intrusion detected"]
 
     if score < 30:
@@ -129,11 +128,10 @@ def live_event():
 
     return jsonify({
         "type": status,
-        "message": msg,
+        "message": msg,          # 👈 IMPORTANT FIX
         "time": datetime.now().strftime("%H:%M:%S"),
         "score": score
     })
-
 
 # ================= SCAN PAGE ONLY =================
 @app.route("/api/continuous-scan")

@@ -192,35 +192,36 @@ setInterval(feed, 1000);
 
 
 /* ================= LIVE FEED ================= */
-function feed(){
 
-// ❌ REMOVED BLOCKING CONDITION (MAIN BUG FIX)
-// if(!currentURL) return;
+function feed(){
 
 fetch("/api/live-event")
 .then(r => r.json())
 .then(data => {
 
-let div = document.createElement("div");
+    let div = document.createElement("div");
 
-div.className = data.status.includes("HIGH") ? "log threat" : "log safe";
+    let status = data.status || "SAFE";
+    let msg = data.event || data.message || "No event";
 
-div.innerText = `[${data.time}] ${data.event}`;
+    div.className = status.includes("HIGH") ? "log threat" : "log safe";
+    div.innerText = `[${data.time}] ${msg}`;
 
-document.getElementById("feed").prepend(div);
+    document.getElementById("feed").prepend(div);
 
-/* graph update */
-let score = data.score;
+    // SAFE SCORE HANDLING (IMPORTANT)
+    let score = data.score;
+    if (score === undefined || score === null) score = 0;
 
-labels.push(new Date().toLocaleTimeString());
-values.push(score);
+    labels.push(new Date().toLocaleTimeString());
+    values.push(score);
 
-if(labels.length > 25){
-labels.shift();
-values.shift();
-}
+    if(labels.length > 25){
+        labels.shift();
+        values.shift();
+    }
 
-chart.update();
+    chart.update();
 });
 }
 
