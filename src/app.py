@@ -82,29 +82,39 @@ def analyze():
     url = normalize(request.args.get("url", ""))
 
     if not url or not valid(url):
-        return jsonify({"status": "INVALID URL", "score": 0, "issues": []})
+        return jsonify({
+            "status": "INVALID URL",
+            "score": 0,
+            "issues": []
+        })
 
-    score = random.randint(10, 60)
+    # base score (stable logic for dashboard)
+    score = random.randint(15, 55)
 
-    if "login" in url:
+    # rule-based detection
+    if "login" in url.lower():
         score += 10
-    if "verify" in url:
+    if "verify" in url.lower():
         score += 15
     if "-" in url:
         score += 10
 
-    score = min(score, 100)
+    score = max(0, min(100, score))
 
+    # status rules (your requirement)
     if score < 30:
         status = "SAFE"
-    elif score < 50:
-        status = "MEDIUM"
-    elif score < 60:
-        status = "THREAT"
+    elif 30 <= score < 50:
+        status = "MEDIUM RISK"
+    elif 50 <= score < 60:
+        status = "THREAT AHEAD"
     else:
         status = "HIGH RISK"
 
-    CURRENT_RISK = {"score": score, "status": status}
+    CURRENT_RISK = {
+        "score": score ,
+        "status": status
+    }
 
     return jsonify({
         "score": score,
@@ -112,45 +122,89 @@ def analyze():
         "issues": ["AI scan completed"]
     })
 
-
 # ================= LIVE SCAN (IMPORTANT FIX) =================
 @app.route("/api/continuous-scan")
 def continuous_scan():
-
     base = CURRENT_RISK["score"]
 
-    # 🔥 FORCE FLUCTUATION (THIS FIXES YOUR GRAPH ISSUE)
+    # 🔥 FORCE FLUCTUATION (keeps graph alive)
     score = base + random.randint(-25, 25)
     score = max(0, min(100, score))
 
-    events = [
-        "Packet inspection running",
-        "Firewall anomaly check",
-        "DNS trace active",
-        "Suspicious request filtered",
-        "Bot traffic analysis running",
-        "Port scan detection active",
-        "Traffic signature matched"
+    # ================= EVENT POOLS (REAL SOC STYLE) =================
+    safe_events = [
+        "DNS resolution successful",
+        "HTTPS certificate verified",
+        "Firewall operating normally",
+        "No anomaly detected",
+        "System health stable",
+        "Traffic baseline normal",
+        "Packet inspection clean",
+        "Authentication checks passed"
     ]
+
+    medium_events = [
+        "Unusual traffic pattern detected",
+        "Multiple login attempts observed",
+        "Port scan behavior suspected",
+        "High request rate from single IP",
+        "Bot-like behavior detected",
+        "Session timeout anomalies found"
+    ]
+
+    threat_events = [
+        "Suspicious payload detected",
+        "SQL injection attempt blocked",
+        "Malicious script execution flagged",
+        "Brute force attack suspected",
+        "Unauthorized access attempt",
+        "C2 communication pattern detected"
+    ]
+
+    high_events = [
+        "🚨 CRITICAL BOTNET ACTIVITY DETECTED",
+        "🚨 DATA EXFILTRATION IN PROGRESS",
+        "🚨 RANSOMWARE BEHAVIOR IDENTIFIED",
+        "🚨 ADVANCED PERSISTENT THREAT (APT)",
+        "🚨 SYSTEM COMPROMISE ATTEMPT",
+        "🚨 MULTI-STAGE ATTACK IN PROGRESS"
+    ]
+
+    # ================= STATUS ENGINE =================
+    if score < 30:
+        status = "SAFE"
+        event = random.choice(safe_events)
+
+    elif score < 50:
+        status = "MEDIUM RISK"
+        event = random.choice(medium_events)
+
+    elif score < 60:
+        status = "THREAT AHEAD"
+        event = random.choice(threat_events)
+
+    else:
+        status = "HIGH RISK"
+        event = random.choice(high_events)
 
     return jsonify({
         "score": score,
-        "event": random.choice(events),
+        "status": status,
+        "event": event,
         "time": datetime.now().strftime("%H:%M:%S")
     })
-
 
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
+    global VISITOR_STATS
 
     VISITOR_STATS["total_hits"] += random.randint(1, 5)
 
     for c in VISITOR_STATS["countries"]:
-        VISITOR_STATS["countries"][c] += random.randint(0, 3)
+        VISITOR_STATS["countries"][c] += random.randint(0, 2)
 
     return jsonify(VISITOR_STATS)
-
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
