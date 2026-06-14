@@ -165,7 +165,7 @@ def analyze():
     url = request.args.get("url", "")
 
     if not url:
-    url = "https://intrusion-detection-project-1.onrender.com/"
+       url = "https://intrusion-detection-project-1.onrender.com/"
 
     CURRENT_URL = url 
 
