@@ -11,7 +11,8 @@ except:
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-app = Flask(__name__,
+app = Flask(
+    __name__,
     template_folder=os.path.join(BASE_DIR, "templates"),
     static_folder=os.path.join(BASE_DIR, "static")
 )
@@ -21,6 +22,10 @@ app.secret_key = "soc_ai_secret_key_123"
 
 # ================= GLOBAL STATE =================
 CURRENT_RISK = {"score": 20, "status": "SAFE"}
+
+# 🔥 DASHBOARD FIX STORAGE (SAFE ADDITION ONLY)
+DASHBOARD_HISTORY = []
+DASHBOARD_EVENTS = []
 
 
 # ================= ANALYTICS (FAKE BUT DYNAMIC) =================
@@ -77,7 +82,7 @@ def valid(url):
 # ================= ANALYZE =================
 @app.route("/api/analyze")
 def analyze():
-    global CURRENT_RISK
+    global CURRENT_RISK, DASHBOARD_HISTORY, DASHBOARD_EVENTS
 
     url = normalize(request.args.get("url", ""))
 
@@ -101,7 +106,7 @@ def analyze():
 
     score = max(0, min(100, score))
 
-    # status rules (your requirement)
+    # status rules
     if score < 30:
         status = "SAFE"
     elif 30 <= score < 50:
@@ -112,9 +117,24 @@ def analyze():
         status = "HIGH RISK"
 
     CURRENT_RISK = {
-        "score": score ,
+        "score": score,
         "status": status
     }
+
+    # 🔥 DASHBOARD FIX: store history
+    DASHBOARD_HISTORY.append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "score": score
+    })
+
+    if len(DASHBOARD_HISTORY) > 30:
+        DASHBOARD_HISTORY.pop(0)
+
+    # 🔥 DASHBOARD FIX: event feed
+    DASHBOARD_EVENTS.insert(0, f"{status} - AI scan completed")
+
+    if len(DASHBOARD_EVENTS) > 15:
+        DASHBOARD_EVENTS.pop()
 
     return jsonify({
         "score": score,
@@ -122,16 +142,16 @@ def analyze():
         "issues": ["AI scan completed"]
     })
 
-# ================= LIVE SCAN (IMPORTANT FIX) =================
+
+# ================= LIVE SCAN (UNCHANGED LOGIC) =================
 @app.route("/api/continuous-scan")
 def continuous_scan():
     base = CURRENT_RISK["score"]
 
-    # 🔥 FORCE FLUCTUATION (keeps graph alive)
+    # 🔥 SAME BEHAVIOR (DO NOT CHANGE SYSTEM)
     score = base + random.randint(-25, 25)
     score = max(0, min(100, score))
 
-    # ================= EVENT POOLS (REAL SOC STYLE) =================
     safe_events = [
         "DNS resolution successful",
         "HTTPS certificate verified",
@@ -170,7 +190,6 @@ def continuous_scan():
         "🚨 MULTI-STAGE ATTACK IN PROGRESS"
     ]
 
-    # ================= STATUS ENGINE =================
     if score < 30:
         status = "SAFE"
         event = random.choice(safe_events)
@@ -194,6 +213,17 @@ def continuous_scan():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
+
+# ================= DASHBOARD FEED (NEW SAFE ADDITION) =================
+@app.route("/api/dashboard-feed")
+def dashboard_feed():
+    return jsonify({
+        "history": DASHBOARD_HISTORY,
+        "events": DASHBOARD_EVENTS,
+        "current": CURRENT_RISK
+    })
+
+
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
 def analytics_api():
@@ -204,7 +234,8 @@ def analytics_api():
     for c in VISITOR_STATS["countries"]:
         VISITOR_STATS["countries"][c] += random.randint(0, 2)
 
-    return jsonify(VISITOR_STATS)
+    return VISITOR_STATS
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
