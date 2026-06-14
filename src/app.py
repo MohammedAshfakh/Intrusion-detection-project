@@ -5,9 +5,16 @@ from datetime import datetime
 import random
 import joblib
 import re
-import requests
 from urllib.parse import urlparse
 
+# optional requests (safe for deployment)
+try:
+    import requests
+except:
+    requests = None
+
+
+# ================= BASE PATH =================
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(
@@ -21,20 +28,123 @@ app.secret_key = "soc_ai_secret_key_123"
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
 
+
+# ================= SAFE MODEL LOAD =================
 try:
     model = joblib.load(MODEL_PATH)
-except:
+except Exception as e:
+    print("Model load failed:", e)
     model = None
 
 
+# ================= GLOBAL STATE =================
 CURRENT_URL = ""
-CURRENT_RISK = {"status": "SAFE", "score": 10}
+CURRENT_RISK = {
+    "status": "SAFE",
+    "score": 10
+}
+
+
+# ================= USERS =================
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+    try:
+        with open(USERS_FILE, "r") as f:
+            data = f.read().strip()
+            return json.loads(data) if data else []
+    except:
+        return []
+
+
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
+
+# ================= ROUTES =================
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect("/login")
+    return render_template("dashboard.html")
+
+
+@app.route("/scan")
+def scan():
+    if "user" not in session:
+        return redirect("/login")
+    return render_template("scan.html")
+
+
+@app.route("/analytics")
+def analytics_page():
+    return render_template("analytics.html")
+
+
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+# ================= AUTH =================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        users = load_users()
+
+        for u in users:
+            if u["email"] == email and u["password"] == password:
+                session["user"] = email
+                return redirect("/dashboard")
+
+        return "❌ Invalid Credentials"
+
+    return render_template("login.html")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        users = load_users()
+
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        for u in users:
+            if u["email"] == email:
+                return "⚠️ User already exists"
+
+        users.append({
+            "name": name,
+            "email": email,
+            "password": password
+        })
+
+        save_users(users)
+        return redirect("/login")
+
+    return render_template("register.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
 
 
 # ================= URL VALIDATION =================
 def normalize_url(url):
     url = url.strip()
-
     if not url:
         return None
 
@@ -49,11 +159,9 @@ def is_valid_domain(url):
         parsed = urlparse(url)
         domain = parsed.netloc
 
-        # must contain at least one dot
         if "." not in domain:
             return False
 
-        # block obvious garbage like "ashu"
         if len(domain) < 4:
             return False
 
@@ -62,26 +170,26 @@ def is_valid_domain(url):
         return False
 
 
-# ================= SIMPLE RISK ENGINE =================
+# ================= RISK ENGINE =================
 def calculate_risk(url):
     score = 10
     issues = []
 
     if "-" in url:
         score += 10
-        issues.append("Suspicious '-' in domain")
-
-    if len(url) > 75:
-        score += 10
-        issues.append("Very long URL")
+        issues.append("Suspicious '-' detected")
 
     if "login" in url.lower():
-        score += 20
+        score += 15
         issues.append("Login keyword detected")
 
-    if "paypal" in url.lower():
-        score += 25
-        issues.append("Brand impersonation risk")
+    if "verify" in url.lower():
+        score += 15
+        issues.append("Verification scam pattern")
+
+    if len(url) > 70:
+        score += 10
+        issues.append("Long suspicious URL")
 
     return score, issues
 
@@ -101,33 +209,43 @@ def analyze():
             "message": "Enter valid domain like google.com"
         })
 
-    # test reachability
-    try:
-        r = requests.get(url, timeout=4)
-        if r.status_code >= 400:
+    # check website reachability
+    if requests:
+        try:
+            r = requests.get(url, timeout=4)
+            if r.status_code >= 400:
+                return jsonify({
+                    "status": "ERROR",
+                    "score": 100,
+                    "message": "Website not reachable"
+                })
+        except:
             return jsonify({
                 "status": "ERROR",
                 "score": 100,
                 "message": "Website not reachable"
             })
-    except:
-        return jsonify({
-            "status": "ERROR",
-            "score": 100,
-            "message": "Website not reachable"
-        })
 
     CURRENT_URL = url
 
     score, issues = calculate_risk(url)
 
-    # ML model optional
+    # ML prediction (optional)
     if model:
         try:
-            pred = model.predict([[len(url), url.count("."), url.count("-"), url.count("@"), 1, len(re.findall(r"\d", url))]])[0]
+            pred = model.predict([[
+                len(url),
+                url.count("."),
+                url.count("-"),
+                url.count("@"),
+                1 if "https" in url else 0,
+                len(re.findall(r"\d", url))
+            ]])[0]
+
             if pred == 1:
                 score += 20
-                issues.append("ML suspicious pattern detected")
+                issues.append("ML model flagged risk")
+
         except:
             pass
 
@@ -157,24 +275,19 @@ def live_event():
     safe = [
         "DNS OK",
         "HTTPS Verified",
-        "Firewall OK"
+        "Firewall Stable"
     ]
 
     threat = [
-        "Suspicious pattern detected",
-        "Malware signature found",
-        "Redirect chain detected"
+        "Suspicious activity detected",
+        "Malware signature match",
+        "Phishing pattern found"
     ]
 
-    if score < 30:
-        msg = random.choice(safe)
-        t = "safe"
-    else:
-        msg = random.choice(threat)
-        t = "threat"
+    msg = random.choice(safe if score < 30 else threat)
 
     return jsonify({
-        "type": t,
+        "type": "safe" if score < 30 else "threat",
         "message": msg,
         "time": datetime.now().strftime("%H:%M:%S"),
         "score": score
@@ -186,14 +299,8 @@ def live_event():
 def continuous_scan():
     score = random.randint(5, 95)
 
-    status = (
-        "SAFE" if score < 35 else
-        "MEDIUM RISK" if score < 70 else
-        "ATTACK DETECTED"
-    )
-
     return jsonify({
-        "status": status,
+        "status": "SAFE" if score < 35 else "RISK",
         "score": score,
         "time": datetime.now().strftime("%H:%M:%S"),
         "event": "scan running"
