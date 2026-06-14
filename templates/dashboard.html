@@ -287,38 +287,18 @@ function feed(){
 if(!currentURL) return;
 
 fetch("/api/live-event")
-.then(r=>r.json())
-.then(data=>{
-
-let div = document.createElement("div");
-div.className = data.message.includes("SQL") || data.message.includes("Brute") ? "log threat" : "log safe";
-
-div.innerText = `[${data.time}] ${data.message}`;
-
-document.getElementById("feed").prepend(div);
-
-});
-
-/* chart update */
-let score = 0;
-
-fetch("/api/live-event")
 .then(r => r.json())
 .then(data => {
 
+    // 🔥 LIVE FEED
     let div = document.createElement("div");
-
-    div.className =
-        data.type === "threat"
-        ? "log threat"
-        : "log safe";
-
+    div.className = data.type === "threat" ? "log threat" : "log safe";
     div.innerText = `[${data.time}] ${data.message}`;
-
     document.getElementById("feed").prepend(div);
 
-    // ✅ USE REAL SCORE FROM BACKEND
-    score = data.score;
+    // 📊 CHART UPDATE
+    let score = data.score;
+
     labels.push(new Date().toLocaleTimeString());
     values.push(score);
 
@@ -329,7 +309,6 @@ fetch("/api/live-event")
 
     chart.update();
 });
-
 setInterval(feed, 1000);
 
 </script>
