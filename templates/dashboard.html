@@ -300,19 +300,35 @@ document.getElementById("feed").prepend(div);
 });
 
 /* chart update */
-let score = Math.floor(Math.random() * 100);
+let score = 0;
 
-labels.push(new Date().toLocaleTimeString());
-values.push(score);
+fetch("/api/live-event")
+.then(r => r.json())
+.then(data => {
 
-if(labels.length > 20){
-labels.shift();
-values.shift();
-}
+    let div = document.createElement("div");
 
-chart.update();
+    div.className =
+        data.type === "threat"
+        ? "log threat"
+        : "log safe";
 
-}
+    div.innerText = `[${data.time}] ${data.message}`;
+
+    document.getElementById("feed").prepend(div);
+
+    // ✅ USE REAL SCORE FROM BACKEND
+    score = data.score;
+    labels.push(new Date().toLocaleTimeString());
+    values.push(score);
+
+    if (labels.length > 20) {
+        labels.shift();
+        values.shift();
+    }
+
+    chart.update();
+});
 
 setInterval(feed, 1000);
 
