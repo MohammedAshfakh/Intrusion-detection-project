@@ -236,12 +236,13 @@ def analyze():
 
 
 # ================= LIVE EVENT (FIXED + RICH) =================
+
 @app.route("/api/live-event")
 def live_event():
     base = CURRENT_RISK["score"]
 
-    # fluctuate score for graph
-    score = max(5, min(100, base + random.randint(-8, 8)))
+    # fluctuate score continuously (independent of URL)
+    score = max(5, min(100, base + random.randint(-10, 10)))
 
     safe_events = [
         "DNS Resolution OK",
@@ -259,7 +260,7 @@ def live_event():
         "Phishing attempt detected"
     ]
 
-    # better classification
+    # classification
     if score < 30:
         t = "safe"
         msg = random.choice(safe_events)
@@ -267,13 +268,19 @@ def live_event():
         t = "threat"
         msg = random.choice(threat_events)
 
+    # 🇮🇳 IST TIME FIX
+    from datetime import datetime
+    import pytz
+
+    ist = pytz.timezone("Asia/Kolkata")
+    current_time = datetime.now(ist).strftime("%H:%M:%S")
+
     return jsonify({
         "type": t,
         "message": msg,
-        "time": datetime.now().strftime("%H:%M:%S"),
+        "time": current_time,
         "score": score
     })
-
 
 # ================= ANALYTICS FIX =================
 @app.route("/api/analytics")
