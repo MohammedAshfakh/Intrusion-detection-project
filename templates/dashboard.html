@@ -206,9 +206,7 @@ color:#9ca3af;
 </div>
 
 </div>
-
 <script>
-
 let currentURL = "";
 
 /* ================= ANALYZE ================= */
@@ -217,42 +215,37 @@ function analyze(){
 let url = document.getElementById("url").value;
 currentURL = url;
 
-fetch("/api/analyze?url="+encodeURIComponent(url))
-.then(r=>r.json())
-.then(data=>{
+fetch("/api/analyze?url=" + encodeURIComponent(url))
+.then(r => r.json())
+.then(data => {
 
-document.getElementById("score").innerText =
-    data.score + "%";
+    document.getElementById("score").innerText = data.score + "%";
 
-/* badge */
-let badge = document.getElementById("badge");
+    /* badge */
+    let badge = document.getElementById("badge");
 
-let cls = "safe-b";
-if(data.status.includes("MEDIUM")) cls="med-b";
-if(data.status.includes("ATTACK")) cls="high-b";
+    let cls = "safe-b";
+    if (data.status.includes("MEDIUM")) cls = "med-b";
+    if (data.status.includes("HIGH")) cls = "high-b";
 
-badge.innerHTML =
-`<span class="badge ${cls}">
-${data.status}
-</span>`;
+    badge.innerHTML = `<span class="badge ${cls}">${data.status}</span>`;
 
-let html = "";
+    /* issues */
+    let html = "";
 
-if(data.issues && data.issues.length){
+    if (data.issues && data.issues.length) {
+        html += "<br><b>Detected Issues:</b><ul>";
+        data.issues.forEach(i => {
+            html += `<li>${i}</li>`;
+        });
+        html += "</ul>";
+    }
 
-    html += "<br><b>Detected Issues:</b><ul>";
+    document.getElementById("result").innerHTML = html;
 
-    data.issues.forEach(i=>{
-        html += `<li>${i}</li>`;
-    });
-
-    html += "</ul>";
-}
-
-document.getElementById("result").innerHTML = html;
-
+    /* START FEED + GRAPH ONLY AFTER SCAN */
+    feed();
 });
-
 }
 
 /* ================= CHART ================= */
@@ -290,13 +283,11 @@ fetch("/api/live-event")
 .then(r => r.json())
 .then(data => {
 
-    // 🔥 LIVE FEED
     let div = document.createElement("div");
     div.className = data.type === "threat" ? "log threat" : "log safe";
     div.innerText = `[${data.time}] ${data.message}`;
     document.getElementById("feed").prepend(div);
 
-    // 📊 CHART UPDATE
     let score = data.score;
 
     labels.push(new Date().toLocaleTimeString());
@@ -309,9 +300,9 @@ fetch("/api/live-event")
 
     chart.update();
 });
+}
+
+/* RUN ONCE EVERY SECOND */
 setInterval(feed, 1000);
 
 </script>
-
-</body>
-</html>
