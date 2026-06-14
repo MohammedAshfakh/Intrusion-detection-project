@@ -153,6 +153,70 @@ def continuous_scan():
         "time": datetime.now().strftime("%H:%M:%S")
     })
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+
+        new_user = {
+            "name": request.form.get("name"),
+            "email": request.form.get("email"),
+            "password": request.form.get("password")
+        }
+
+        # STEP 1: load existing users
+        try:
+            with open("users.json", "r") as f:
+                users = json.load(f)
+        except:
+            users = []
+
+        # STEP 2: append new user (STACK BEHAVIOR)
+        users.append(new_user)
+
+        # STEP 3: save back
+        with open("users.json", "w") as f:
+            json.dump(users, f, indent=4)
+
+        return redirect("/login")
+
+    return render_template("register.html")
+
+
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        try:
+            with open("users.json", "r") as f:
+                users = json.load(f)
+        except:
+            users = []
+
+        for u in users:
+            if u["email"] == email and u["password"] == password:
+                session["user"] = email
+                return redirect("/dashboard")
+
+        return "Invalid credentials"
+
+    return render_template("login.html")
+
+
+
+
+
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
 
 # ================= ANALYTICS =================
 @app.route("/api/analytics")
